@@ -12,6 +12,9 @@ export const Navigation = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-8">
+            <Link to="/">
+              <img src="/logo.png" alt="Company Logo" className="h-12 w-12" />
+            </Link>
             <p className="text-sm italic">
               Real Ninja Professionals: Safeguarding your goals with expertise and integrity.
             </p>
