@@ -1,33 +1,67 @@
 import { Navigation } from "@/components/Navigation";
 import { BlogPost } from "@/components/BlogPost";
 import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
-const DUMMY_POSTS = [
-  {
-    id: 1,
-    title: "Getting Started with Cybersecurity",
-    excerpt: "Learn the basics of protecting your digital assets",
-    date: "2024-02-20",
-    author: "John Doe",
-    content: "Cybersecurity is crucial in today's digital world...",
-  },
-  {
-    id: 2,
-    title: "Best Practices for Network Security",
-    excerpt: "Essential tips for securing your network",
-    date: "2024-02-19",
-    author: "Jane Smith",
-    content: "Implementing proper network security measures...",
-  },
-];
+interface Post {
+  id: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  author_id: string;
+  created_at: string;
+}
+
+const fetchPosts = async (): Promise<Post[]> => {
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+};
 
 const Blog = () => {
-  const { data: posts, isLoading } = useQuery({
+  const { data: posts, isLoading, error } = useQuery({
     queryKey: ['blog-posts'],
-    queryFn: () => Promise.resolve(DUMMY_POSTS),
+    queryFn: fetchPosts,
   });
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) {
+    return (
+      <main className="min-h-screen pt-20">
+        <Navigation />
+        <div className="container mx-auto px-4 py-8">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="bg-white rounded-lg shadow-lg p-6">
+                  <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-full mb-4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="min-h-screen pt-20">
+        <Navigation />
+        <div className="container mx-auto px-4 py-8">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            Error loading blog posts. Please try again later.
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen pt-20">
@@ -36,7 +70,17 @@ const Blog = () => {
         <h1 className="text-4xl font-bold mb-8">Our Blog</h1>
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {posts?.map((post) => (
-            <BlogPost key={post.id} post={post} />
+            <BlogPost
+              key={post.id}
+              post={{
+                id: post.id,
+                title: post.title,
+                excerpt: post.excerpt || '',
+                date: post.created_at,
+                author: 'Demo Author', // We'll update this later when we add author information
+                content: post.content,
+              }}
+            />
           ))}
         </div>
       </div>
