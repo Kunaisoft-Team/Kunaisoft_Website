@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface Post {
   id: string;
   title: string;
-  excerpt: string;
+  excerpt: string | null;
   content: string;
   author_id: string;
   created_at: string;
