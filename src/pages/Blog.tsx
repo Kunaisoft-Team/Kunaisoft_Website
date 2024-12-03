@@ -10,12 +10,19 @@ interface Post {
   content: string;
   author_id: string;
   created_at: string;
+  profiles: {
+    full_name: string;
+    avatar_url: string | null;
+  };
 }
 
 const fetchPosts = async (): Promise<Post[]> => {
   const { data, error } = await supabase
     .from('posts')
-    .select('*')
+    .select(`
+      *,
+      profiles:author_id(full_name, avatar_url)
+    `)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -77,7 +84,7 @@ const Blog = () => {
                 title: post.title,
                 excerpt: post.excerpt || '',
                 date: post.created_at,
-                author: 'Demo Author', // We'll update this later when we add author information
+                author: post.profiles.full_name,
                 content: post.content,
               }}
             />

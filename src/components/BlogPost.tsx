@@ -1,3 +1,5 @@
+import { Avatar, AvatarFallback } from "./ui/avatar";
+
 interface BlogPostProps {
   post: {
     id: string;
@@ -17,8 +19,13 @@ export const BlogPost = ({ post }: BlogPostProps) => {
           {post.title}
         </h2>
         <p className="text-gray-600 mb-4 line-clamp-3">{post.excerpt}</p>
-        <div className="flex justify-between items-center text-sm text-gray-500">
-          <span>{post.author}</span>
+        <div className="flex items-center justify-between text-sm text-gray-500">
+          <div className="flex items-center gap-2">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback>{post.author[0]}</AvatarFallback>
+            </Avatar>
+            <span>{post.author}</span>
+          </div>
           <span>{new Date(post.date).toLocaleDateString()}</span>
         </div>
       </div>
