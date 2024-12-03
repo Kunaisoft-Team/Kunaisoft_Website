@@ -23,7 +23,8 @@ const fetchPosts = async (): Promise<Post[]> => {
       *,
       profiles:author_id(full_name, avatar_url)
     `)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .returns<Post[]>();
 
   if (error) throw error;
   return data || [];
