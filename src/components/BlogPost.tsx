@@ -2,8 +2,12 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 
+type PostWithProfile = Tables<'posts'> & {
+  profiles: Tables<'profiles'> | null;
+};
+
 export function BlogPost() {
-  const [posts, setPosts] = useState<Tables<'posts'>[]>([]);
+  const [posts, setPosts] = useState<PostWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -58,7 +62,7 @@ export function BlogPost() {
             </div>
             {post.profiles && (
               <div className="mt-4 text-sm text-gray-500">
-                By {(post.profiles as any).full_name}
+                By {post.profiles.full_name}
               </div>
             )}
           </div>
