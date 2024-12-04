@@ -2,8 +2,15 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 
+type Profile = {
+  id: string;
+  full_name: string;
+  avatar_url: string | null;
+  created_at: string;
+};
+
 type PostWithProfile = Tables<'posts'> & {
-  profiles: Tables<'profiles'>;
+  profiles: Profile;
 };
 
 export function BlogPost() {
@@ -27,7 +34,8 @@ export function BlogPost() {
             created_at
           )
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .returns<PostWithProfile[]>();
 
       if (error) {
         console.error('Error fetching posts:', error);
