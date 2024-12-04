@@ -27,7 +27,7 @@ export function BlogPost() {
         .from('posts')
         .select(`
           *,
-          profiles!posts_author_id_fkey (
+          profiles (
             id,
             full_name,
             avatar_url,
