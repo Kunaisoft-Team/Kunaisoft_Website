@@ -1,34 +1,58 @@
-import { Avatar, AvatarFallback } from "./ui/avatar";
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Tables } from '@/integrations/supabase/types';
 
-interface BlogPostProps {
-  post: {
-    id: string;
-    title: string;
-    excerpt: string;
-    date: string;
-    author: string;
-    content: string;
-  };
+export function BlogPost() {
+  const [posts, setPosts] = useState<Tables<'posts'>[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  async function fetchPosts() {
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching posts:', error);
+        return;
+      }
+
+      setPosts(data || []);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
+    return <div>Loading posts...</div>;
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto py-8">
+      {posts.map((post) => (
+        <article key={post.id} className="mb-8 p-6 bg-white rounded-lg shadow">
+          <h2 className="text-2xl font-bold mb-4">{post.title}</h2>
+          {post.excerpt && (
+            <p className="text-gray-600 mb-4">{post.excerpt}</p>
+          )}
+          <div className="prose max-w-none">
+            {post.content.split('\n\n').map((paragraph, index) => (
+              <p key={index} className="mb-4">
+                {paragraph.trim()}
+              </p>
+            ))}
+          </div>
+        </article>
+      ))}
+    </div>
+  );
 }
 
-export const BlogPost = ({ post }: BlogPostProps) => {
-  return (
-    <article className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
-      <div className="p-6">
-        <h2 className="text-2xl font-semibold mb-2 text-gray-800 hover:text-blue-600 transition-colors">
-          {post.title}
-        </h2>
-        <p className="text-gray-600 mb-4 line-clamp-3">{post.excerpt}</p>
-        <div className="flex items-center justify-between text-sm text-gray-500">
-          <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback>{post.author[0]}</AvatarFallback>
-            </Avatar>
-            <span>{post.author}</span>
-          </div>
-          <span>{new Date(post.date).toLocaleDateString()}</span>
-        </div>
-      </div>
-    </article>
-  );
-};
+export default BlogPost;
