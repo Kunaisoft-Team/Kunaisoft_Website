@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 
 type PostWithProfile = Tables<'posts'> & {
-  profiles: Tables<'profiles'> | null;
+  profiles: Tables<'profiles'>;
 };
 
 export function BlogPost() {
@@ -20,9 +20,11 @@ export function BlogPost() {
         .from('posts')
         .select(`
           *,
-          profiles:author_id (
+          profiles!posts_author_id_fkey (
+            id,
             full_name,
-            avatar_url
+            avatar_url,
+            created_at
           )
         `)
         .order('created_at', { ascending: false });
