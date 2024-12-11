@@ -9,7 +9,9 @@ export function RSSFeedTester() {
   const testFetch = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-rss-articles');
+      const { data, error } = await supabase.functions.invoke('fetch-rss-articles', {
+        method: 'POST'
+      });
       
       if (error) {
         console.error('Error fetching RSS:', error);
@@ -18,7 +20,20 @@ export function RSSFeedTester() {
       }
 
       console.log('RSS Fetch Response:', data);
-      toast.success('RSS feeds fetched successfully');
+      
+      if (data.results && Array.isArray(data.results)) {
+        const successCount = data.results.filter(r => r.status === 'success').length;
+        const errorCount = data.results.filter(r => r.status === 'error').length;
+        
+        if (successCount > 0) {
+          toast.success(`Successfully fetched ${successCount} RSS feed${successCount !== 1 ? 's' : ''}`);
+        }
+        if (errorCount > 0) {
+          toast.error(`Failed to fetch ${errorCount} RSS feed${errorCount !== 1 ? 's' : ''}`);
+        }
+      } else {
+        toast.success('RSS feeds processed successfully');
+      }
     } catch (error) {
       console.error('Error:', error);
       toast.error('An error occurred while fetching RSS feeds');
