@@ -18,27 +18,24 @@ serve(async (req) => {
 
     console.log('Fetching existing RSS bot profile...');
     
-    // Get the single RSS bot profile
-    const { data: botProfile, error: botError } = await supabaseClient
-      .from('profiles')
-      .select('id')
-      .eq('is_bot', true)
-      .eq('full_name', 'RSS Bot')
-      .single();
+    // Get the single RSS bot profile with proper error handling
+    let botProfile;
+    try {
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('id')
+        .eq('is_bot', true)
+        .eq('full_name', 'RSS Bot')
+        .single();
 
-    if (botError) {
-      console.error('Error fetching bot profile:', botError);
+      if (error) throw error;
+      if (!data) throw new Error('RSS Bot profile not found');
+      botProfile = data;
+    } catch (error) {
+      console.error('Error fetching bot profile:', error);
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch bot profile', details: botError }),
+        JSON.stringify({ error: 'Failed to fetch bot profile', details: error.message }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
-    }
-
-    if (!botProfile) {
-      console.error('RSS Bot profile not found');
-      return new Response(
-        JSON.stringify({ error: 'RSS Bot profile not found' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
       );
     }
 
@@ -60,22 +57,27 @@ serve(async (req) => {
 
       for (const source of sources) {
         try {
-          if (!source || !source.name || !source.url) {
+          if (!source?.id || !source?.name || !source?.url) {
             console.error('Invalid source data:', source);
-            errors.push('Invalid source data encountered');
+            errors.push(`Invalid source data: ${JSON.stringify(source)}`);
             continue;
           }
 
           console.log(`Processing source: ${source.name}`);
           const newPosts = await fetchAndParseRSSFeed(supabaseClient, source, botId);
-          console.log(`Successfully processed ${newPosts} new posts from ${source.name}`);
           
-          if (typeof newPosts === 'number') {
-            totalNewPosts += newPosts;
-            
-            if (newPosts > 0) {
-              await updateLastFetchTime(supabaseClient, source.id);
-            }
+          if (typeof newPosts !== 'number') {
+            throw new Error('Invalid return value from fetchAndParseRSSFeed');
+          }
+          
+          console.log(`Successfully processed ${newPosts} new posts from ${source.name}`);
+          totalNewPosts += newPosts;
+          
+          if (newPosts > 0) {
+            await updateLastFetchTime(supabaseClient, source.id).catch(error => {
+              console.error(`Failed to update last fetch time for ${source.name}:`, error);
+              errors.push(`Failed to update last fetch time for ${source.name}: ${error.message}`);
+            });
           }
         } catch (sourceError) {
           console.error(`Error processing source ${source?.name || 'unknown'}:`, sourceError);
