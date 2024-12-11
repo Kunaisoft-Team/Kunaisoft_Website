@@ -32,24 +32,3 @@ export const extractStatistics = (content: string): Array<{ value: string; label
 
   return stats.slice(0, 2);
 };
-
-export const extractKeywords = (content: string): string[] => {
-  const baseKeywords = ['ai tools', 'artificial intelligence', 'productivity', 'technology', 'automation'];
-  
-  const words = content.toLowerCase()
-    .replace(/<[^>]*>/g, '')
-    .split(/\W+/)
-    .filter(word => word.length > 3);
-  
-  const wordFrequency: { [key: string]: number } = {};
-  words.forEach(word => {
-    wordFrequency[word] = (wordFrequency[word] || 0) + 1;
-  });
-
-  const additionalKeywords = Object.entries(wordFrequency)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 5)
-    .map(([word]) => word);
-
-  return [...new Set([...baseKeywords, ...additionalKeywords])];
-};
