@@ -27,6 +27,9 @@ export function BlogPost({ post }: BlogPostProps) {
   const handleImageError = () => {
     setImageError(true);
   };
+
+  // Clean HTML tags from excerpt if needed
+  const cleanExcerpt = post.excerpt ? post.excerpt.replace(/<[^>]*>/g, '') : '';
   
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow bg-white border-none">
@@ -55,9 +58,9 @@ export function BlogPost({ post }: BlogPostProps) {
             {post.title}
           </h2>
         </Link>
-        {post.excerpt && (
+        {cleanExcerpt && (
           <p className="text-gray-600 mb-4 line-clamp-3 text-base leading-relaxed">
-            {post.excerpt}
+            {cleanExcerpt}
           </p>
         )}
       </CardContent>
