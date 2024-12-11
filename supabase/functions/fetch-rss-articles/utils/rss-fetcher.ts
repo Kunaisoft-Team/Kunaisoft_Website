@@ -5,7 +5,8 @@ export async function fetchReliableSources(supabaseClient: ReturnType<typeof cre
   const { data: sources, error } = await supabaseClient
     .from('rss_sources')
     .select('*')
-    .eq('active', true);
+    .eq('active', true)
+    .neq('url', 'lifehacker.com'); // Explicitly exclude Lifehacker
 
   if (error) {
     console.error('Error fetching RSS sources:', error);
@@ -17,6 +18,12 @@ export async function fetchReliableSources(supabaseClient: ReturnType<typeof cre
 
 export async function fetchRSSFeed(url: string) {
   try {
+    // Skip if the URL contains lifehacker
+    if (url.includes('lifehacker.com')) {
+      console.log('Skipping Lifehacker URL:', url);
+      return { entries: [], error: null };
+    }
+
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
