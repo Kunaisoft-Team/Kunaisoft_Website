@@ -50,7 +50,12 @@ export function BlogList({
       .from("posts")
       .select(`
         *,
-        profiles!inner(id, full_name, avatar_url),
+        profiles!inner (
+          id,
+          full_name,
+          avatar_url,
+          created_at
+        ),
         posts_tags!inner(tag_id)
       `, { count: "exact" });
 
@@ -75,7 +80,13 @@ export function BlogList({
       .range(from, to);
 
     if (data && count) {
-      setPosts(data as PostWithProfile[]);
+      // Transform the data to match our type
+      const transformedPosts = data.map(post => ({
+        ...post,
+        profiles: post.profiles[0], // Take the first profile from the array
+      })) as PostWithProfile[];
+      
+      setPosts(transformedPosts);
       setTotalPages(Math.ceil(count / postsPerPage));
     }
   }
