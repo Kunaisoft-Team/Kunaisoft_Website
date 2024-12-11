@@ -53,32 +53,16 @@ Deno.serve(async (req) => {
       try {
         console.log(`Fetching RSS feed: ${source.name} (${source.url})`)
         
-        // Define browser-like headers for each source
-        const headers: Record<string, string> = {
-          'Accept': 'application/rss+xml, application/xml, text/xml, application/atom+xml, text/html',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        }
-
-        // Add specific headers for different sources
-        if (source.url.includes('openai.com')) {
-          headers['Accept-Language'] = 'en-US,en;q=0.9'
-          headers['Cache-Control'] = 'no-cache'
-          headers['Pragma'] = 'no-cache'
-          headers['Sec-Ch-Ua'] = '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"'
-          headers['Sec-Ch-Ua-Mobile'] = '?0'
-          headers['Sec-Ch-Ua-Platform'] = '"Windows"'
-          headers['Sec-Fetch-Dest'] = 'document'
-          headers['Sec-Fetch-Mode'] = 'navigate'
-          headers['Sec-Fetch-Site'] = 'none'
-          headers['Sec-Fetch-User'] = '?1'
-          headers['Upgrade-Insecure-Requests'] = '1'
+        // Use simple, standard headers for RSS feeds
+        const headers = {
+          'Accept': 'application/rss+xml, application/xml, text/xml',
+          'User-Agent': 'RSS Reader Bot/1.0'
         }
         
         const response = await fetch(source.url, { headers })
         
         if (!response.ok) {
           console.error(`HTTP error fetching ${source.name}: ${response.status} - ${response.statusText}`)
-          console.error('Response headers:', Object.fromEntries(response.headers.entries()))
           results.push({ 
             source: source.name, 
             status: 'error', 
@@ -117,7 +101,6 @@ Deno.serve(async (req) => {
           }
         } catch (parseError) {
           console.error(`Error parsing XML for ${source.name}:`, parseError)
-          console.error('Raw response:', xml.substring(0, 500)) // Log first 500 chars of response
           results.push({ 
             source: source.name, 
             status: 'error', 
