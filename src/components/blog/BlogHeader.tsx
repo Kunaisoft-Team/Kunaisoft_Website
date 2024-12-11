@@ -22,6 +22,9 @@ export const BlogHeader = ({
   author,
 }: BlogHeaderProps) => {
   const currentUrl = window.location.href;
+  
+  // Clean HTML tags from excerpt
+  const cleanExcerpt = excerpt ? excerpt.replace(/<[^>]*>/g, '') : '';
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString("en-US", {
@@ -45,9 +48,9 @@ export const BlogHeader = ({
         {title}
       </h1>
 
-      {excerpt && (
+      {cleanExcerpt && (
         <p className="text-xl text-gray-600 leading-relaxed mb-10 max-w-2xl mx-auto">
-          {excerpt}
+          {cleanExcerpt}
         </p>
       )}
 
