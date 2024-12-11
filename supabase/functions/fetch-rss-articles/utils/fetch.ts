@@ -81,13 +81,13 @@ export async function fetchAndParseRSSFeed(
     
     if (!response.ok) {
       console.error(`HTTP error! status: ${response.status}`);
-      return 0;
+      throw new Error(`Failed to fetch RSS feed: ${response.status}`);
     }
     
     const xml = await response.text();
     if (!xml) {
       console.error('Empty XML response received');
-      return 0;
+      throw new Error('Empty XML response received');
     }
 
     console.log(`Received XML response of length: ${xml.length}`);
@@ -97,12 +97,12 @@ export async function fetchAndParseRSSFeed(
       parsedXML = parseXML(xml);
     } catch (parseError) {
       console.error('Failed to parse XML:', parseError);
-      return 0;
+      throw new Error('Failed to parse XML feed');
     }
 
     if (!parsedXML) {
       console.error('Parsed XML is null');
-      return 0;
+      throw new Error('Failed to parse XML feed: null result');
     }
 
     const entries = (parsedXML.rss?.channel?.item || parsedXML.feed?.entry || []) as RSSEntry[];
@@ -129,6 +129,6 @@ export async function fetchAndParseRSSFeed(
     return storedCount;
   } catch (error) {
     console.error(`Error processing feed ${source.name}:`, error);
-    return 0;
+    throw error;
   }
 }
