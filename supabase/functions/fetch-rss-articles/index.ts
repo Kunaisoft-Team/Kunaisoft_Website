@@ -1,10 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { parse as parseXML } from "https://deno.land/x/xml@2.1.1/mod.ts";
-import { corsHeaders, handleCORS } from './utils/cors.ts';
+import { corsHeaders } from './utils/cors.ts';
 import { getRSSBotProfile } from './utils/profile.ts';
 import { storeArticleAsPost } from './utils/storage.ts';
 
-async function fetchRSSSources(supabase: any) {
+async function fetchRSSSources(supabase: ReturnType<typeof createClient>) {
   console.log('Fetching RSS sources...');
   const { data: sources, error: sourcesError } = await supabase
     .from('rss_sources')
@@ -20,7 +20,7 @@ async function fetchRSSSources(supabase: any) {
   return sources;
 }
 
-async function updateLastFetchTime(supabase: any, sourceId: string) {
+async function updateLastFetchTime(supabase: ReturnType<typeof createClient>, sourceId: string) {
   console.log('Updating last fetch time for source:', sourceId);
   const { error: updateError } = await supabase
     .from('rss_sources')
@@ -29,10 +29,11 @@ async function updateLastFetchTime(supabase: any, sourceId: string) {
 
   if (updateError) {
     console.error(`Error updating last_fetch_at for source ${sourceId}:`, updateError);
+    throw updateError;
   }
 }
 
-async function fetchAndParseRSSFeed(supabase: any, source: any, botId: string) {
+async function fetchAndParseRSSFeed(supabase: ReturnType<typeof createClient>, source: any, botId: string) {
   console.log(`Fetching RSS feed: ${source.name} (${source.url})`);
   
   try {
@@ -57,8 +58,14 @@ async function fetchAndParseRSSFeed(supabase: any, source: any, botId: string) {
     
     let storedCount = 0;
     for (const entry of entries) {
-      const stored = await storeArticleAsPost(supabase, entry, source.category, botId);
-      if (stored) storedCount++;
+      try {
+        await storeArticleAsPost(supabase, entry, source.category, botId);
+        storedCount++;
+      } catch (error) {
+        console.error(`Error storing entry from ${source.name}:`, error);
+        // Continue with next entry even if one fails
+        continue;
+      }
     }
     
     console.log(`Successfully stored ${storedCount} new posts from ${source.name}`);
@@ -70,8 +77,10 @@ async function fetchAndParseRSSFeed(supabase: any, source: any, botId: string) {
 }
 
 Deno.serve(async (req) => {
-  const corsResponse = handleCORS(req);
-  if (corsResponse) return corsResponse;
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
 
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
@@ -93,28 +102,85 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     // Get or create RSS Bot profile
-    const botId = await getRSSBotProfile(supabase);
-    console.log('Using RSS Bot ID:', botId);
+    let botId;
+    try {
+      botId = await getRSSBotProfile(supabase);
+      console.log('Using RSS Bot ID:', botId);
+    } catch (error) {
+      console.error('Failed to get/create RSS bot profile:', error);
+      throw error;
+    }
     
     // Fetch active RSS sources
-    const sources = await fetchRSSSources(supabase);
-    console.log(`Processing ${sources?.length || 0} RSS sources`);
+    let sources;
+    try {
+      sources = await fetchRSSSources(supabase);
+      console.log(`Processing ${sources?.length || 0} RSS sources`);
+    } catch (error) {
+      console.error('Failed to fetch RSS sources:', error);
+      throw error;
+    }
     
     let totalNewPosts = 0;
+    const errors = [];
     
     // Process each source
     for (const source of sources || []) {
-      const newPosts = await fetchAndParseRSSFeed(supabase, source, botId);
-      totalNewPosts += newPosts;
-      
-      if (newPosts > 0) {
-        await updateLastFetchTime(supabase, source.id);
+      try {
+        const newPosts = await fetchAndParseRSSFeed(supabase, source, botId);
+        totalNewPosts += newPosts;
+        
+        if (newPosts > 0) {
+          await updateLastFetchTime(supabase, source.id);
+        }
+      } catch (error) {
+        console.error(`Error processing source ${source.name}:`, error);
+        errors.push({ source: source.name, error: error.message });
+        // Continue with next source even if one fails
+        continue;
       }
     }
 
+    // If we have errors but also some successes, return a partial success response
+    if (errors.length > 0 && totalNewPosts > 0) {
+      return new Response(
+        JSON.stringify({ 
+          message: 'RSS feeds partially processed', 
+          totalNewPosts,
+          processedSources: sources?.length || 0,
+          errors
+        }),
+        {
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          },
+          status: 207, // Multi-Status
+        }
+      );
+    }
+
+    // If we have only errors and no successes, return an error response
+    if (errors.length > 0 && totalNewPosts === 0) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to process RSS feeds', 
+          errors
+        }),
+        {
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          },
+          status: 500,
+        }
+      );
+    }
+
+    // If everything was successful
     return new Response(
       JSON.stringify({ 
-        message: 'RSS feeds processed', 
+        message: 'RSS feeds processed successfully', 
         totalNewPosts,
         processedSources: sources?.length || 0
       }),
