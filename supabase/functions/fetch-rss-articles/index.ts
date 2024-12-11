@@ -5,8 +5,7 @@ import { corsHeaders } from './utils/cors.ts';
 
 // List of excluded RSS sources that are known to cause issues
 const EXCLUDED_SOURCES = [
-  'lifehacker.com',
-  'feeds.lifehacker.com'
+  // Lifehacker has been re-enabled since we improved error handling
 ];
 
 serve(async (req) => {
