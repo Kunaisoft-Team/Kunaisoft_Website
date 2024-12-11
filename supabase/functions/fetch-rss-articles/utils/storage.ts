@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { RSSEntry } from './types.ts';
 import { createSlug, extractContent, extractImageUrl } from './content.ts';
+import { selectRandomPlaceholderImage } from './image-processor.ts';
 
 export async function storeArticleAsPost(
   supabase: ReturnType<typeof createClient>,
@@ -39,7 +40,8 @@ export async function storeArticleAsPost(
       return false;
     }
 
-    const imageUrl = extractImageUrl(entry, content);
+    // Select a random image based on the category
+    const imageUrl = selectRandomPlaceholderImage(category);
 
     // Check if post already exists
     try {
