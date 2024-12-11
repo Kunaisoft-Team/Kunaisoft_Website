@@ -3,13 +3,13 @@ export const unsplashImages = [
   "photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&w=1200&q=80", // Tech workspace
   "photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=1200&q=80", // Programming
   "photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80", // Code on screen
-  "photo-1605810230434-7631ac76ec81?auto=format&fit=crop&w=1200&q=80", // Team collaboration
-  "photo-1517433670267-08bbd4be890f?auto=format&fit=crop&w=1200&q=80", // AI concept
+  "photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80", // Tech abstract
+  "photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80", // Digital art
   
   // Productivity & Workspace
-  "photo-1497032628192-86f99bcd76bc?auto=format&fit=crop&w=1200&q=80", // Clean desk
   "photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&w=1200&q=80", // Laptop workspace
-  "photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=80", // Organized desk
+  "photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80", // Remote work
+  "photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&w=1200&q=80", // Code screen
   
   // Business & Strategy
   "photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80", // Business meeting
