@@ -28,31 +28,15 @@ const BlogPostDetail = () => {
   }
 
   if (!post) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-2xl text-gray-600">Loading...</div>
+      </div>
+    );
   }
 
-  // Convert markdown-style headers to HTML with proper classes
-  const formatContent = (content: string) => {
-    return content
-      .replace(/^# (.*$)/gm, '<h1 class="text-4xl font-bold mb-6 mt-8">$1</h1>')
-      .replace(/^## (.*$)/gm, '<h2 class="text-3xl font-bold mb-5 mt-7">$1</h2>')
-      .replace(/^### (.*$)/gm, '<h3 class="text-2xl font-bold mb-4 mt-6">$1</h3>')
-      .replace(/\n\n/g, '</p><p class="mb-4">')
-      // Convert bullet points
-      .replace(/^- (.*$)/gm, '<li class="ml-6 mb-2">$1</li>')
-      // Convert numbered lists
-      .replace(/^\d\. (.*$)/gm, '<li class="ml-6 mb-2">$1</li>')
-      // Wrap paragraphs
-      .replace(/^(?!<[hl]|<li)(.*$)/gm, '<p class="mb-4">$1</p>')
-      // Wrap lists
-      .replace(/<li.*?>([\s\S]*?)(?=<\/li>)/g, '<ul class="list-disc mb-4">$1</ul>')
-      // Add emphasis
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>');
-  };
-
   return (
-    <main className="min-h-screen pt-20">
+    <main className="min-h-screen bg-[#F1F0FB]">
       <Helmet>
         <title>{post.title} | Our Blog</title>
         <meta name="description" content={post.meta_description || post.excerpt} />
@@ -66,38 +50,91 @@ const BlogPostDetail = () => {
 
       <Navigation />
       
-      <article className="container mx-auto px-4 py-8 max-w-4xl">
-        {post.image_url && (
-          <img
-            src={post.image_url}
-            alt={post.title}
-            className="w-full h-[400px] object-cover rounded-lg mb-8"
-          />
-        )}
-
-        <h1 className="text-5xl font-bold mb-8">{post.title}</h1>
-
-        <div className="flex items-center mb-8">
-          {post.profiles.avatar_url && (
+      <article className="container mx-auto px-4 py-12 max-w-4xl">
+        {/* Hero Section */}
+        <div className="mb-12">
+          {post.image_url ? (
             <img
-              src={post.profiles.avatar_url}
-              alt={post.profiles.full_name}
-              className="w-12 h-12 rounded-full mr-4"
+              src={post.image_url}
+              alt={post.title}
+              className="w-full h-[500px] object-cover rounded-xl shadow-lg mb-8"
+            />
+          ) : (
+            <img
+              src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b"
+              alt="Technology"
+              className="w-full h-[500px] object-cover rounded-xl shadow-lg mb-8"
             />
           )}
-          <div>
-            <p className="font-medium">{post.profiles.full_name}</p>
-            <p className="text-gray-500">
-              {new Date(post.created_at).toLocaleDateString()}
-              {post.reading_time_minutes && ` · ${post.reading_time_minutes} min read`}
-            </p>
+
+          <h1 className="text-5xl font-bold mb-6 text-[#1A1F2C] leading-tight">
+            {post.title}
+          </h1>
+
+          {/* Author Info */}
+          <div className="flex items-center mb-8 bg-white p-4 rounded-lg shadow-sm">
+            {post.profiles.avatar_url ? (
+              <img
+                src={post.profiles.avatar_url}
+                alt={post.profiles.full_name}
+                className="w-14 h-14 rounded-full mr-4 border-2 border-[#8B5CF6]"
+              />
+            ) : (
+              <div className="w-14 h-14 rounded-full mr-4 bg-[#8B5CF6] flex items-center justify-center text-white text-xl">
+                {post.profiles.full_name.charAt(0)}
+              </div>
+            )}
+            <div>
+              <p className="font-semibold text-lg text-[#1A1F2C]">
+                {post.profiles.full_name}
+              </p>
+              <div className="flex items-center text-gray-600 text-sm">
+                <span>{new Date(post.created_at).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}</span>
+                {post.reading_time_minutes && (
+                  <>
+                    <span className="mx-2">•</span>
+                    <span>{post.reading_time_minutes} min read</span>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
+        {/* Article Content */}
         <div 
-          className="prose prose-lg max-w-none prose-headings:font-bold prose-p:text-gray-700 prose-a:text-blue-600 prose-strong:font-bold prose-ul:list-disc prose-ol:list-decimal"
-          dangerouslySetInnerHTML={{ __html: formatContent(post.content) }}
+          className="prose prose-lg max-w-none bg-white p-8 rounded-xl shadow-sm
+            prose-headings:text-[#1A1F2C] prose-headings:font-bold
+            prose-h1:text-4xl prose-h1:mb-8
+            prose-h2:text-3xl prose-h2:mb-6 prose-h2:mt-12
+            prose-p:text-gray-700 prose-p:leading-relaxed prose-p:mb-6
+            prose-a:text-[#8B5CF6] prose-a:no-underline hover:prose-a:underline
+            prose-strong:text-[#1A1F2C] prose-strong:font-semibold
+            prose-ul:list-disc prose-ul:pl-6 prose-ul:my-6
+            prose-li:text-gray-700 prose-li:mb-2
+            prose-img:rounded-lg prose-img:shadow-md"
+          dangerouslySetInnerHTML={{ __html: post.content }}
         />
+
+        {/* Social Share Section */}
+        <div className="mt-12 p-6 bg-white rounded-xl shadow-sm">
+          <h3 className="text-xl font-semibold text-[#1A1F2C] mb-4">Share this article</h3>
+          <div className="flex space-x-4">
+            <button className="px-6 py-2 bg-[#1DA1F2] text-white rounded-lg hover:bg-opacity-90 transition-colors">
+              Twitter
+            </button>
+            <button className="px-6 py-2 bg-[#4267B2] text-white rounded-lg hover:bg-opacity-90 transition-colors">
+              Facebook
+            </button>
+            <button className="px-6 py-2 bg-[#0077B5] text-white rounded-lg hover:bg-opacity-90 transition-colors">
+              LinkedIn
+            </button>
+          </div>
+        </div>
       </article>
     </main>
   );
