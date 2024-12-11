@@ -3,6 +3,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { parse as parseXML } from "https://deno.land/x/xml@2.1.1/mod.ts";
 import { corsHeaders } from './utils/cors.ts';
 
+// List of excluded RSS sources that are known to cause issues
+const EXCLUDED_SOURCES = [
+  'lifehacker.com',
+  'feeds.lifehacker.com'
+];
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -55,6 +61,12 @@ serve(async (req) => {
     const results = [];
     for (const source of sources || []) {
       try {
+        // Check if the source URL contains any excluded domains
+        if (EXCLUDED_SOURCES.some(excluded => source.url.includes(excluded))) {
+          console.log(`Skipping excluded source: ${source.name} (${source.url})`);
+          continue;
+        }
+
         console.log(`Processing source: ${source.name}`);
         
         // Fetch RSS feed
