@@ -36,7 +36,7 @@ const BlogPostDetail = () => {
   }
 
   return (
-    <main className="min-h-screen bg-[#F1F0FB]">
+    <main className="min-h-screen bg-white">
       <Helmet>
         <title>{post.title} | Our Blog</title>
         <meta name="description" content={post.meta_description || post.excerpt} />
@@ -50,87 +50,88 @@ const BlogPostDetail = () => {
 
       <Navigation />
       
-      <article className="container mx-auto px-4 py-12 max-w-4xl">
+      <article className="max-w-[800px] mx-auto px-4 py-12">
         {/* Hero Section */}
-        <div className="mb-12">
-          {post.image_url ? (
-            <img
-              src={post.image_url}
-              alt={post.title}
-              className="w-full h-[500px] object-cover rounded-xl shadow-lg mb-8"
-            />
-          ) : (
-            <img
-              src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b"
-              alt="Technology"
-              className="w-full h-[500px] object-cover rounded-xl shadow-lg mb-8"
-            />
-          )}
+        <header className="mb-12">
+          <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+            <span>{new Date(post.created_at).toLocaleDateString('en-US', {
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric'
+            })}</span>
+            <span>•</span>
+            <span>{post.reading_time_minutes} min read</span>
+          </div>
 
-          <h1 className="text-5xl font-bold mb-6 text-[#1A1F2C] leading-tight">
+          <h1 className="text-4xl sm:text-5xl font-bold mb-6 text-[#1A1F2C] leading-tight">
             {post.title}
           </h1>
 
+          {post.excerpt && (
+            <p className="text-xl text-gray-600 leading-relaxed mb-8">
+              {post.excerpt}
+            </p>
+          )}
+
+          {post.image_url && (
+            <img
+              src={post.image_url}
+              alt={post.title}
+              className="w-full aspect-[16/9] object-cover rounded-xl mb-8"
+            />
+          )}
+
           {/* Author Info */}
-          <div className="flex items-center mb-8 bg-white p-4 rounded-lg shadow-sm">
-            {post.profiles.avatar_url ? (
-              <img
-                src={post.profiles.avatar_url}
-                alt={post.profiles.full_name}
-                className="w-14 h-14 rounded-full mr-4 border-2 border-[#8B5CF6]"
-              />
-            ) : (
-              <div className="w-14 h-14 rounded-full mr-4 bg-[#8B5CF6] flex items-center justify-center text-white text-xl">
-                {post.profiles.full_name.charAt(0)}
-              </div>
-            )}
+          <div className="flex items-center gap-3 border-t border-gray-100 pt-6">
+            <img
+              src={post.profiles?.avatar_url || "/placeholder.svg"}
+              alt={post.profiles?.full_name}
+              className="w-10 h-10 rounded-full object-cover"
+            />
             <div>
-              <p className="font-semibold text-lg text-[#1A1F2C]">
-                {post.profiles.full_name}
+              <p className="font-medium text-[#1A1F2C]">
+                {post.profiles?.full_name}
               </p>
-              <div className="flex items-center text-gray-600 text-sm">
-                <span>{new Date(post.created_at).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}</span>
-                {post.reading_time_minutes && (
-                  <>
-                    <span className="mx-2">•</span>
-                    <span>{post.reading_time_minutes} min read</span>
-                  </>
-                )}
-              </div>
+              <p className="text-sm text-gray-600">
+                {post.profiles?.title || "Content Creator"}
+              </p>
             </div>
           </div>
-        </div>
+        </header>
 
         {/* Article Content */}
         <div 
-          className="prose prose-lg max-w-none bg-white p-8 rounded-xl shadow-sm
+          className="prose prose-lg max-w-none
             prose-headings:text-[#1A1F2C] prose-headings:font-bold
-            prose-h1:text-4xl prose-h1:mb-8
-            prose-h2:text-3xl prose-h2:mb-6 prose-h2:mt-12
-            prose-p:text-gray-700 prose-p:leading-relaxed prose-p:mb-6
-            prose-a:text-[#8B5CF6] prose-a:no-underline hover:prose-a:underline
+            prose-h2:text-3xl prose-h2:mt-12 prose-h2:mb-4
+            prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-4
+            prose-p:text-gray-600 prose-p:leading-relaxed prose-p:mb-6
+            prose-a:text-primary hover:prose-a:text-primary/80
             prose-strong:text-[#1A1F2C] prose-strong:font-semibold
-            prose-ul:list-disc prose-ul:pl-6 prose-ul:my-6
-            prose-li:text-gray-700 prose-li:mb-2
-            prose-img:rounded-lg prose-img:shadow-md"
+            prose-ul:my-6 prose-ul:list-disc prose-ul:pl-6
+            prose-ol:my-6 prose-ol:list-decimal prose-ol:pl-6
+            prose-li:text-gray-600 prose-li:mb-2
+            prose-img:rounded-lg prose-img:my-8
+            prose-blockquote:border-l-4 prose-blockquote:border-primary
+            prose-blockquote:pl-6 prose-blockquote:italic
+            prose-blockquote:text-gray-600 prose-blockquote:my-8"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
 
-        {/* Social Share Section */}
-        <div className="mt-12 p-6 bg-white rounded-xl shadow-sm">
-          <h3 className="text-xl font-semibold text-[#1A1F2C] mb-4">Share this article</h3>
-          <div className="flex space-x-4">
-            <button className="px-6 py-2 bg-[#1DA1F2] text-white rounded-lg hover:bg-opacity-90 transition-colors">
+        {/* Share Section */}
+        <div className="mt-12 pt-6 border-t border-gray-100">
+          <h3 className="text-lg font-semibold text-[#1A1F2C] mb-4">Share this article</h3>
+          <div className="flex gap-3">
+            <button 
+              onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(window.location.href)}`, '_blank')}
+              className="px-4 py-2 bg-[#1DA1F2] text-white rounded-lg hover:bg-opacity-90 transition-colors text-sm"
+            >
               Twitter
             </button>
-            <button className="px-6 py-2 bg-[#4267B2] text-white rounded-lg hover:bg-opacity-90 transition-colors">
-              Facebook
-            </button>
-            <button className="px-6 py-2 bg-[#0077B5] text-white rounded-lg hover:bg-opacity-90 transition-colors">
+            <button 
+              onClick={() => window.open(`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(window.location.href)}&title=${encodeURIComponent(post.title)}`, '_blank')}
+              className="px-4 py-2 bg-[#0077B5] text-white rounded-lg hover:bg-opacity-90 transition-colors text-sm"
+            >
               LinkedIn
             </button>
           </div>
