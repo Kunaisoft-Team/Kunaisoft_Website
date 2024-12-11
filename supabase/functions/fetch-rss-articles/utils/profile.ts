@@ -16,10 +16,15 @@ export async function getRSSBotProfile(supabase: any) {
     return existingBot.id;
   }
 
+  // Generate a new UUID for the bot
+  const botId = crypto.randomUUID();
+  console.log('Generated new bot ID:', botId);
+
   // Create new bot profile
   const { data: newBot, error: botError } = await supabase
     .from('profiles')
     .insert({
+      id: botId,
       full_name: 'RSS Bot',
       is_bot: true,
       avatar_url: null
