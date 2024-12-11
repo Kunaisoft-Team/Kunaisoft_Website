@@ -1,10 +1,10 @@
 export const unsplashImages = [
   // Technology & Innovation
-  "photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80", // Tech workspace
-  "photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80", // Digital abstract
+  "photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&w=1200&q=80", // Tech workspace
+  "photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=1200&q=80", // Programming
+  "photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80", // Code on screen
+  "photo-1605810230434-7631ac76ec81?auto=format&fit=crop&w=1200&q=80", // Team collaboration
   "photo-1517433670267-08bbd4be890f?auto=format&fit=crop&w=1200&q=80", // AI concept
-  "photo-1523961131990-5ea7c61b2107?auto=format&fit=crop&w=1200&q=80", // Data visualization
-  "photo-1526374965328-7f61d5aba04b?auto=format&fit=crop&w=1200&q=80", // Code screen
   
   // Productivity & Workspace
   "photo-1497032628192-86f99bcd76bc?auto=format&fit=crop&w=1200&q=80", // Clean desk
@@ -18,12 +18,12 @@ export const unsplashImages = [
 ];
 
 export const categoryImages: { [key: string]: number[] } = {
-  technology: [0, 1, 2, 3, 4],
+  ai_tools: [0, 1, 2, 3, 4],
+  ai_prompts: [1, 2, 3, 4, 5],
   productivity: [5, 6, 7],
-  business: [8, 9, 10],
+  getting_things_done: [6, 7, 8]
 };
 
-// Keep track of recently used images to avoid repetition
 let recentlyUsedImages: string[] = [];
 const MAX_RECENT_IMAGES = 5;
 

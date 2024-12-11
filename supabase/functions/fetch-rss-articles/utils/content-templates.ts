@@ -13,29 +13,36 @@ export const generatePostStructure = (
 ) => {
   return `
     <article class="prose prose-lg max-w-none">
-      <header class="mb-12">
-        <div class="relative h-[500px] mb-8 rounded-xl overflow-hidden shadow-lg">
+      <header class="mb-16">
+        <div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
+          <span>${authorData.date}</span>
+          <span>•</span>
+          <span>5 min read</span>
+        </div>
+
+        <h1 class="text-4xl sm:text-5xl font-bold mb-8 text-[#1A1F2C] leading-[1.2]">
+          ${title}
+        </h1>
+
+        <div class="flex items-center gap-4 mb-12">
+          <img
+            src="${authorData.avatarUrl}"
+            alt="${authorData.name}"
+            class="w-12 h-12 rounded-full object-cover border-2 border-primary"
+          />
+          <div>
+            <p class="font-semibold text-[#1A1F2C]">${authorData.name}</p>
+            <p class="text-sm text-gray-600">Content Strategist at Kunaisoft</p>
+          </div>
+        </div>
+
+        <figure class="relative h-[500px] mb-16 rounded-xl overflow-hidden shadow-lg">
           <img 
             src="${heroImage}" 
             alt="${title}"
             class="w-full h-full object-cover transition-transform hover:scale-105 duration-500"
           />
-          <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-          <div class="absolute bottom-0 left-0 right-0 p-8 text-white">
-            <h1 class="text-4xl sm:text-5xl font-bold mb-4">${title}</h1>
-            <div class="flex items-center gap-4">
-              <img
-                src="${authorData.avatarUrl}"
-                alt="${authorData.name}"
-                class="w-12 h-12 rounded-full border-2 border-white/50"
-              />
-              <div>
-                <p class="font-medium">${authorData.name}</p>
-                <p class="text-sm opacity-75">${authorData.date}</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        </figure>
       </header>
 
       ${keyPoints.length > 0 ? `
@@ -45,7 +52,7 @@ export const generatePostStructure = (
             ${keyPoints.map((point, index) => `
               <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all">
                 <div class="flex items-start gap-4">
-                  <span class="flex-shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white">
+                  <span class="flex-shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white font-semibold">
                     ${index + 1}
                   </span>
                   <p class="text-gray-700">${point}</p>
@@ -83,14 +90,14 @@ export const generatePostStructure = (
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8 my-12">
         <div class="relative h-[300px] rounded-xl overflow-hidden shadow-lg">
           <img 
-            src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80" 
+            src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&w=1200&q=80" 
             alt="Technical implementation"
             class="w-full h-full object-cover transition-transform hover:scale-105 duration-500"
           />
         </div>
         <div class="relative h-[300px] rounded-xl overflow-hidden shadow-lg">
           <img 
-            src="https://images.unsplash.com/photo-1581092795360-fd1ca04f0952?auto=format&fit=crop&w=1200&q=80" 
+            src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=1200&q=80" 
             alt="Professional context"
             class="w-full h-full object-cover transition-transform hover:scale-105 duration-500"
           />
@@ -141,7 +148,7 @@ export const formatContentSection = (content: string): string => {
           <div class="float-right ml-8 mb-8 w-1/3">
             <div class="relative h-[200px] rounded-xl overflow-hidden shadow-lg">
               <img 
-                src="https://images.unsplash.com/photo-${1518770660439 + index}-4636190af475?auto=format&fit=crop&w=800&q=80" 
+                src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80" 
                 alt="Section illustration"
                 class="w-full h-full object-cover transition-transform hover:scale-105 duration-500"
               />
