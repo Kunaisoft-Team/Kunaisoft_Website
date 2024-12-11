@@ -1,6 +1,6 @@
 // @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Parser from 'https://deno.land/x/rss_parser@0.5.0/mod.ts';
+import { parse as parseFeed } from "https://deno.land/x/rss/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -48,7 +48,6 @@ Deno.serve(async (req) => {
 
     console.log(`Processing ${sources?.length || 0} RSS sources`)
     
-    const parser = new Parser();
     const results = []
     
     for (const source of sources || []) {
@@ -72,13 +71,13 @@ Deno.serve(async (req) => {
         }
         
         const xml = await response.text()
-        const feed = await parser.parse(xml)
+        const feed = await parseFeed(xml)
         
         console.log(`Successfully parsed feed: ${source.name}`)
         results.push({ 
           source: source.name, 
           status: 'success',
-          entries: feed.items?.length || 0 
+          entries: feed.entries?.length || 0 
         })
 
         const { error: updateError } = await supabase
