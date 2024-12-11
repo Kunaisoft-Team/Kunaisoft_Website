@@ -32,17 +32,17 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Get or create bot profile for RSS posts
-    const { data: botProfile } = await supabaseClient
+    // Create bot profile if it doesn't exist
+    const { data: existingBot, error: botError } = await supabaseClient
       .from('profiles')
       .select('id')
       .eq('full_name', 'ML Mastery Bot')
       .eq('is_bot', true)
       .single()
 
-    let botId
-    if (!botProfile) {
-      const { data: newBot } = await supabaseClient
+    if (botError && botError.code === 'PGRST116') {
+      console.log('Bot profile not found, creating new one...')
+      const { data: newBot, error: createBotError } = await supabaseClient
         .from('profiles')
         .insert({
           full_name: 'ML Mastery Bot',
@@ -50,9 +50,22 @@ Deno.serve(async (req) => {
         })
         .select()
         .single()
-      botId = newBot?.id
+
+      if (createBotError) {
+        throw new Error(`Failed to create bot profile: ${createBotError.message}`)
+      }
+      
+      console.log('Successfully created bot profile:', newBot)
+      var botId = newBot.id
+    } else if (botError) {
+      throw new Error(`Error fetching bot profile: ${botError.message}`)
     } else {
-      botId = botProfile.id
+      console.log('Found existing bot profile:', existingBot)
+      var botId = existingBot.id
+    }
+
+    if (!botId) {
+      throw new Error('Failed to get or create bot profile')
     }
 
     // Get default tag for RSS posts
@@ -77,6 +90,7 @@ Deno.serve(async (req) => {
     }
 
     // Process each article
+    let processedCount = 0
     if (feed.entries) {
       for (const entry of feed.entries) {
         const title = entry.title?.value || entry.title
@@ -99,6 +113,8 @@ Deno.serve(async (req) => {
             .single()
 
           if (!existingPost) {
+            console.log('Creating new post:', title, 'with author_id:', botId)
+            
             // Insert new post with all required fields
             const { data: newPost, error: postError } = await supabaseClient
               .from('posts')
@@ -133,6 +149,7 @@ Deno.serve(async (req) => {
                 console.error('Error adding tag to post:', tagError)
               } else {
                 console.log('Successfully created post with tag:', title)
+                processedCount++
               }
             }
           } else {
@@ -148,7 +165,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: `Processed ${feed.entries?.length || 0} entries`
+        message: `Successfully processed ${processedCount} new entries out of ${feed.entries?.length || 0} total entries`
       }), 
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
