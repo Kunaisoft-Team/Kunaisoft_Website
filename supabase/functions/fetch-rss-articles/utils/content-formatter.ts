@@ -1,8 +1,8 @@
-import { generateIntroduction } from './sections/introduction';
-import { generateKeyConcepts } from './sections/key-concepts';
-import { generateStrategies } from './sections/strategies';
-import { generateCaseStudies } from './sections/case-studies';
-import { generateConclusion } from './sections/conclusion';
+import { generateIntroduction } from './sections/introduction.ts';
+import { generateKeyConcepts } from './sections/key-concepts.ts';
+import { generateStrategies } from './sections/strategies.ts';
+import { generateCaseStudies } from './sections/case-studies.ts';
+import { generateConclusion } from './sections/conclusion.ts';
 
 export const formatContent = (content: string, title: string, category?: string): string => {
   // Combine all sections

@@ -1,4 +1,4 @@
-import { formatContent } from './content-formatter';
+import { formatContent } from './content-formatter.ts';
 
 export function expandContent(baseContent: string, title: string, category?: string): string {
   // If content is already long enough, just format it
