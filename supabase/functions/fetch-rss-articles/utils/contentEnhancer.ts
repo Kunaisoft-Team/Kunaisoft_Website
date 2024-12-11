@@ -87,16 +87,24 @@ export function enhanceContent(originalContent: string, title: string, topic: st
 }
 
 function generateIntroduction(content: string): string {
-  return `In today's rapidly evolving landscape of ${content.slice(0, 100)}...`;
+  // Return full introduction without truncation
+  return content;
 }
 
 function generateKeyPoints(content: string): string[] {
-  return [
-    `Understanding the fundamentals: ${content.slice(0, 50)}...`,
-    `Key considerations for implementation`,
-    `Best practices and optimization strategies`,
-    `Future trends and developments`
-  ];
+  const paragraphs = content.split('\n').filter(p => p.trim().length > 0);
+  const points = paragraphs.slice(0, 4).map(p => p.trim());
+  
+  if (points.length < 4) {
+    return [
+      "Understanding the fundamentals of the topic in depth",
+      "Key considerations for practical implementation",
+      "Best practices and optimization strategies",
+      "Future trends and potential developments"
+    ];
+  }
+  
+  return points;
 }
 
 function generateDetailedContent(content: string): string {
@@ -139,12 +147,22 @@ function generatePracticalApplications(topic: string): Array<{ title: string; de
 }
 
 function generateKeyTakeaways(content: string, topic: string): string[] {
-  return [
-    `Understanding core concepts is crucial for successful implementation`,
-    `Regular monitoring and optimization lead to better results`,
-    `Integration with existing workflows enhances adoption`,
-    `Continuous learning and adaptation are key to long-term success`
-  ];
+  const paragraphs = content.split('\n').filter(p => p.trim().length > 0);
+  const takeaways = paragraphs
+    .slice(-4)
+    .map(p => p.trim())
+    .filter(p => p.length > 20 && p.length < 200);
+
+  if (takeaways.length < 4) {
+    return [
+      "Understanding core concepts is crucial for successful implementation",
+      "Regular monitoring and optimization lead to better results",
+      "Integration with existing workflows enhances adoption",
+      "Continuous learning and adaptation are key to long-term success"
+    ];
+  }
+
+  return takeaways;
 }
 
 function generateStatistics(topic: string): Array<{ value: string; label: string }> {
@@ -170,8 +188,10 @@ function generateStatistics(topic: string): Array<{ value: string; label: string
 }
 
 function generateExcerpt(content: string): string {
-  const plainText = content.replace(/<[^>]*>/g, '');
-  return plainText.substring(0, 200) + '...';
+  // Generate a meaningful excerpt from the first few paragraphs
+  const paragraphs = content.split('\n').filter(p => p.trim().length > 0);
+  const firstParagraph = paragraphs[0] || '';
+  return firstParagraph.length > 300 ? `${firstParagraph.substring(0, 297)}...` : firstParagraph;
 }
 
 function calculateReadingTime(content: string): number {
