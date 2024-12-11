@@ -16,23 +16,24 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Get first available bot profile for RSS feed posts
+    console.log('Fetching bot profile...');
+    
+    // Get first available bot profile for RSS feed posts with better error handling
     const { data: botProfiles, error: botError } = await supabaseClient
       .from('profiles')
       .select('id')
       .eq('is_bot', true)
-      .limit(1)
-      .single();
+      .limit(1);
 
     if (botError) {
       console.error('Error fetching bot profile:', botError);
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch bot profile' }),
+        JSON.stringify({ error: 'Failed to fetch bot profile', details: botError }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
 
-    if (!botProfiles) {
+    if (!botProfiles || botProfiles.length === 0) {
       console.error('No bot profiles found');
       return new Response(
         JSON.stringify({ error: 'No bot profiles found' }),
@@ -40,7 +41,7 @@ serve(async (req) => {
       );
     }
 
-    const botId = botProfiles.id;
+    const botId = botProfiles[0].id;
     console.log('Using Bot ID:', botId);
 
     let totalNewPosts = 0;
@@ -58,6 +59,12 @@ serve(async (req) => {
 
       for (const source of sources) {
         try {
+          if (!source || !source.name || !source.url) {
+            console.error('Invalid source data:', source);
+            errors.push('Invalid source data encountered');
+            continue;
+          }
+
           console.log(`Processing source: ${source.name}`);
           const newPosts = await fetchAndParseRSSFeed(supabaseClient, source, botId);
           console.log(`Successfully processed ${newPosts} new posts from ${source.name}`);
@@ -70,8 +77,8 @@ serve(async (req) => {
             }
           }
         } catch (sourceError) {
-          console.error(`Error processing source ${source.name}:`, sourceError);
-          errors.push(`${source.name}: ${sourceError.message}`);
+          console.error(`Error processing source ${source?.name || 'unknown'}:`, sourceError);
+          errors.push(`${source?.name || 'unknown'}: ${sourceError.message}`);
         }
       }
 
