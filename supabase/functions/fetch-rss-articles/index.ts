@@ -7,8 +7,116 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+interface RSSSource {
+  id: string;
+  name: string;
+  url: string;
+}
+
+interface FetchResult {
+  source: string;
+  status: 'success' | 'error';
+  message?: string;
+  entries?: number;
+}
+
+// Function to get headers for RSS request
+function getRSSHeaders(sourceUrl: string) {
+  const headers = {
+    'Accept': 'application/rss+xml, application/xml, text/xml',
+    'User-Agent': 'RSS Reader Bot/1.0'
+  }
+
+  if (sourceUrl.includes('lifehacker.com')) {
+    headers['Accept'] = 'application/rss+xml, application/xml, text/xml, application/atom+xml';
+    headers['Cache-Control'] = 'no-cache';
+  }
+
+  return headers;
+}
+
+// Function to fetch RSS sources from Supabase
+async function fetchRSSSources(supabase: any) {
+  const { data: sources, error: sourcesError } = await supabase
+    .from('rss_sources')
+    .select('*')
+    .eq('active', true)
+
+  if (sourcesError) {
+    console.error('Error fetching RSS sources:', sourcesError)
+    throw new Error('Failed to fetch RSS sources')
+  }
+
+  return sources;
+}
+
+// Function to update last fetch time
+async function updateLastFetchTime(supabase: any, sourceId: string) {
+  const { error: updateError } = await supabase
+    .from('rss_sources')
+    .update({ last_fetch_at: new Date().toISOString() })
+    .eq('id', sourceId)
+
+  if (updateError) {
+    console.error(`Error updating last_fetch_at for source ${sourceId}:`, updateError)
+  }
+}
+
+// Function to fetch and parse RSS feed
+async function fetchAndParseRSSFeed(source: RSSSource): Promise<FetchResult> {
+  try {
+    console.log(`Fetching RSS feed: ${source.name} (${source.url})`)
+    
+    const headers = getRSSHeaders(source.url)
+    const response = await fetch(source.url, { headers })
+    
+    if (!response.ok) {
+      console.error(`HTTP error fetching ${source.name}: ${response.status} - ${response.statusText}`)
+      return { 
+        source: source.name, 
+        status: 'error', 
+        message: `HTTP error! status: ${response.status} - ${response.statusText}` 
+      }
+    }
+    
+    const xml = await response.text()
+    
+    if (!xml || xml.trim().length === 0) {
+      console.error(`Empty response from ${source.name}`);
+      return {
+        source: source.name,
+        status: 'error',
+        message: 'Empty response received'
+      }
+    }
+    
+    const parsedXML = parseXML(xml)
+    
+    if (!parsedXML?.rss?.channel && !parsedXML?.feed) {
+      throw new Error('Invalid feed structure - neither RSS nor Atom format detected')
+    }
+    
+    const entries = parsedXML.rss?.channel?.item || parsedXML.feed?.entry || []
+    
+    console.log(`Successfully parsed feed: ${source.name} with ${entries.length} entries`)
+    return { 
+      source: source.name, 
+      status: 'success',
+      entries: entries.length
+    }
+    
+  } catch (error) {
+    console.error(`Error processing feed ${source.name}:`, error)
+    return { 
+      source: source.name, 
+      status: 'error', 
+      message: error.message 
+    }
+  }
+}
+
+// Main request handler
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
       headers: corsHeaders,
@@ -34,107 +142,18 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey)
-
-    const { data: sources, error: sourcesError } = await supabase
-      .from('rss_sources')
-      .select('*')
-      .eq('active', true)
-
-    if (sourcesError) {
-      console.error('Error fetching RSS sources:', sourcesError)
-      throw new Error('Failed to fetch RSS sources')
-    }
-
+    const sources = await fetchRSSSources(supabase)
+    
     console.log(`Processing ${sources?.length || 0} RSS sources`)
     
-    const results = []
+    const results: FetchResult[] = []
     
     for (const source of sources || []) {
-      try {
-        console.log(`Fetching RSS feed: ${source.name} (${source.url})`)
-        
-        // Use simple, standard headers for RSS feeds
-        const headers = {
-          'Accept': 'application/rss+xml, application/xml, text/xml',
-          'User-Agent': 'RSS Reader Bot/1.0'
-        }
-
-        // Add specific handling for Lifehacker
-        if (source.url.includes('lifehacker.com')) {
-          headers['Accept'] = 'application/rss+xml, application/xml, text/xml, application/atom+xml';
-          headers['Cache-Control'] = 'no-cache';
-        }
-        
-        const response = await fetch(source.url, { headers })
-        
-        if (!response.ok) {
-          console.error(`HTTP error fetching ${source.name}: ${response.status} - ${response.statusText}`)
-          results.push({ 
-            source: source.name, 
-            status: 'error', 
-            message: `HTTP error! status: ${response.status} - ${response.statusText}` 
-          })
-          continue
-        }
-        
-        const xml = await response.text()
-        
-        // Check if we got a valid XML response
-        if (!xml || xml.trim().length === 0) {
-          console.error(`Empty response from ${source.name}`);
-          results.push({
-            source: source.name,
-            status: 'error',
-            message: 'Empty response received'
-          });
-          continue;
-        }
-        
-        try {
-          const parsedXML = parseXML(xml)
-          
-          // Validate RSS structure
-          if (!parsedXML?.rss?.channel) {
-            // Check for Atom format as fallback
-            if (!parsedXML?.feed) {
-              throw new Error('Invalid feed structure - neither RSS nor Atom format detected')
-            }
-          }
-          
-          // Extract feed entries from the parsed XML
-          const entries = parsedXML.rss?.channel?.item || parsedXML.feed?.entry || []
-          
-          console.log(`Successfully parsed feed: ${source.name} with ${entries.length} entries`)
-          results.push({ 
-            source: source.name, 
-            status: 'success',
-            entries: entries.length
-          })
-
-          const { error: updateError } = await supabase
-            .from('rss_sources')
-            .update({ last_fetch_at: new Date().toISOString() })
-            .eq('id', source.id)
-
-          if (updateError) {
-            console.error(`Error updating last_fetch_at for ${source.name}:`, updateError)
-          }
-        } catch (parseError) {
-          console.error(`Error parsing feed for ${source.name}:`, parseError)
-          results.push({ 
-            source: source.name, 
-            status: 'error', 
-            message: `Feed parsing error: ${parseError.message}` 
-          })
-        }
-
-      } catch (error) {
-        console.error(`Error processing source ${source.name}:`, error)
-        results.push({ 
-          source: source.name, 
-          status: 'error', 
-          message: error.message 
-        })
+      const result = await fetchAndParseRSSFeed(source)
+      results.push(result)
+      
+      if (result.status === 'success') {
+        await updateLastFetchTime(supabase, source.id)
       }
     }
 
