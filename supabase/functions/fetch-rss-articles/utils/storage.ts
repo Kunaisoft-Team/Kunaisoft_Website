@@ -1,3 +1,4 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
 
 function createSlug(title: string): string {
@@ -23,7 +24,7 @@ function extractImageUrl(content: string): string | null {
   return imgMatch ? imgMatch[1] : null;
 }
 
-async function createTag(supabase: any, category: string) {
+async function createTag(supabase: ReturnType<typeof createClient>, category: string) {
   console.log('Creating or finding tag for category:', category);
   
   // First try to find existing tag
@@ -54,7 +55,12 @@ async function createTag(supabase: any, category: string) {
   return newTag.id;
 }
 
-export async function storeArticleAsPost(supabase: any, entry: any, category: string, botId: string) {
+export async function storeArticleAsPost(
+  supabase: ReturnType<typeof createClient>,
+  entry: any,
+  category: string,
+  botId: string
+) {
   try {
     console.log('Processing entry:', entry.title?._text);
     
@@ -67,7 +73,7 @@ export async function storeArticleAsPost(supabase: any, entry: any, category: st
     const content = extractContent(entry);
     const slug = createSlug(title);
     const imageUrl = extractImageUrl(content);
-    
+
     // Check if post already exists
     const { data: existingPost } = await supabase
       .from('posts')
@@ -83,7 +89,7 @@ export async function storeArticleAsPost(supabase: any, entry: any, category: st
     // Get or create tag for the category
     const tagId = await createTag(supabase, category);
 
-    // Insert new post
+    // Insert new post with RETURNING clause
     const { data: post, error: postError } = await supabase
       .from('posts')
       .insert({
@@ -115,7 +121,6 @@ export async function storeArticleAsPost(supabase: any, entry: any, category: st
 
     if (tagRelationError) {
       console.error('Error creating post-tag relationship:', tagRelationError);
-      // Consider if we should delete the post in this case
       throw tagRelationError;
     }
 
@@ -123,6 +128,6 @@ export async function storeArticleAsPost(supabase: any, entry: any, category: st
     return true;
   } catch (error) {
     console.error('Error in storeArticleAsPost:', error);
-    return false;
+    throw error; // Re-throw the error to be handled by the caller
   }
 }
