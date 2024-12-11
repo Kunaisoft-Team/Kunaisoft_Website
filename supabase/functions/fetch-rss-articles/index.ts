@@ -1,160 +1,9 @@
-// @ts-ignore
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { parse as parseXML } from "https://deno.land/x/xml@2.1.1/mod.ts";
+import { corsHeaders, handleCORS } from './utils/cors.ts';
+import { getRSSBotProfile } from './utils/profile.ts';
+import { storeArticleAsPost } from './utils/storage.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-// Function to get RSS bot profile or create if doesn't exist
-async function getRSSBotProfile(supabase: any) {
-  console.log('Getting or creating RSS Bot profile...');
-  
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('full_name', 'RSS Bot')
-    .single();
-
-  if (profileError) {
-    console.log('Creating new RSS Bot profile...');
-    const { data: newProfile, error: createError } = await supabase
-      .from('profiles')
-      .insert({
-        full_name: 'RSS Bot',
-        avatar_url: null
-      })
-      .select()
-      .single();
-
-    if (createError) {
-      console.error('Error creating RSS bot profile:', createError);
-      throw createError;
-    }
-    return newProfile.id;
-  }
-
-  return profile.id;
-}
-
-// Function to create a slug from a title
-function createSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-}
-
-// Function to extract content from various RSS formats
-function extractContent(item: any): string {
-  const content = item.content || 
-         item['content:encoded'] || 
-         item.description || 
-         item.summary || 
-         '';
-  
-  console.log('Extracted content length:', content.length);
-  return content;
-}
-
-// Function to extract image URL from content or media
-function extractImageUrl(item: any, content: string): string | null {
-  if (item['media:content']?.url) {
-    console.log('Found media:content image:', item['media:content'].url);
-    return item['media:content'].url;
-  }
-
-  if (item.enclosure?.url && item.enclosure.type?.startsWith('image/')) {
-    console.log('Found enclosure image:', item.enclosure.url);
-    return item.enclosure.url;
-  }
-
-  const imgMatch = content.match(/<img[^>]+src="([^">]+)"/);
-  if (imgMatch) {
-    console.log('Found image in content:', imgMatch[1]);
-    return imgMatch[1];
-  }
-
-  console.log('No image found in RSS item');
-  return null;
-}
-
-// Function to store an article as a blog post
-async function storeArticleAsPost(supabase: any, article: any, sourceCategory: string, botId: string) {
-  console.log('Processing article:', article.title);
-  
-  try {
-    const content = extractContent(article);
-    const imageUrl = extractImageUrl(article, content);
-    const slug = createSlug(article.title);
-
-    // Check if post with this title already exists
-    const { data: existingPost } = await supabase
-      .from('posts')
-      .select('id')
-      .eq('title', article.title)
-      .single();
-
-    if (existingPost) {
-      console.log('Post already exists:', article.title);
-      return false;
-    }
-
-    // Create the blog post
-    console.log('Creating new post:', article.title);
-    const { data: post, error: postError } = await supabase
-      .from('posts')
-      .insert({
-        title: article.title,
-        content: content,
-        excerpt: content.substring(0, 200) + '...',
-        author_id: botId,
-        slug: slug,
-        image_url: imageUrl,
-        meta_description: content.substring(0, 160),
-        meta_keywords: [sourceCategory],
-        reading_time_minutes: Math.ceil(content.split(' ').length / 200)
-      })
-      .select()
-      .single();
-
-    if (postError) {
-      console.error('Error creating post:', postError);
-      return false;
-    }
-
-    // Get or create the tag for the category
-    console.log('Processing tag for category:', sourceCategory);
-    const { data: tag, error: tagError } = await supabase
-      .from('tags')
-      .select('id')
-      .eq('name', sourceCategory)
-      .single();
-
-    if (!tagError && tag) {
-      // Add the tag to the post
-      const { error: tagLinkError } = await supabase
-        .from('posts_tags')
-        .insert({
-          post_id: post.id,
-          tag_id: tag.id
-        });
-
-      if (tagLinkError) {
-        console.error('Error linking tag to post:', tagLinkError);
-      }
-    }
-
-    console.log('Successfully created post:', post.id);
-    return true;
-  } catch (error) {
-    console.error('Error in storeArticleAsPost:', error);
-    return false;
-  }
-}
-
-// Function to fetch RSS sources from Supabase
 async function fetchRSSSources(supabase: any) {
   console.log('Fetching RSS sources...');
   const { data: sources, error: sourcesError } = await supabase
@@ -171,7 +20,6 @@ async function fetchRSSSources(supabase: any) {
   return sources;
 }
 
-// Function to update last fetch time
 async function updateLastFetchTime(supabase: any, sourceId: string) {
   console.log('Updating last fetch time for source:', sourceId);
   const { error: updateError } = await supabase
@@ -184,7 +32,6 @@ async function updateLastFetchTime(supabase: any, sourceId: string) {
   }
 }
 
-// Function to fetch and parse RSS feed
 async function fetchAndParseRSSFeed(supabase: any, source: any, botId: string) {
   console.log(`Fetching RSS feed: ${source.name} (${source.url})`);
   
@@ -222,14 +69,9 @@ async function fetchAndParseRSSFeed(supabase: any, source: any, botId: string) {
   }
 }
 
-// Main request handler
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { 
-      headers: corsHeaders,
-      status: 204,
-    });
-  }
+  const corsResponse = handleCORS(req);
+  if (corsResponse) return corsResponse;
 
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
