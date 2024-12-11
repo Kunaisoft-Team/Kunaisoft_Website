@@ -1,7 +1,6 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { parse as parseXML } from "https://deno.land/x/xml@2.1.1/mod.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { RSSSource, RSSEntry } from './types.ts';
-import { storeArticleAsPost } from './storage.ts';
 import { RELIABLE_SOURCES } from './config.ts';
 
 export async function fetchReliableSources(supabase: ReturnType<typeof createClient>): Promise<RSSSource[]> {
@@ -11,11 +10,15 @@ export async function fetchReliableSources(supabase: ReturnType<typeof createCli
   }
 
   console.log('Fetching RSS sources...');
+  
+  // Create an array of conditions for each reliable source
+  const conditions = RELIABLE_SOURCES.map(domain => `url.ilike('%${domain}%')`).join(' or ');
+  
   const { data: sources, error: sourcesError } = await supabase
     .from('rss_sources')
     .select('*')
     .eq('active', true)
-    .filter('url', 'in', `(${RELIABLE_SOURCES.map(domain => `%.${domain}`).join(',')})`)
+    .or(conditions)
     .limit(5);
 
   if (sourcesError) {
@@ -28,7 +31,7 @@ export async function fetchReliableSources(supabase: ReturnType<typeof createCli
     return [];
   }
 
-  console.log(`Found ${sources.length} active RSS sources`);
+  console.log(`Found ${sources.length} active RSS sources:`, sources.map(s => s.url));
   return sources;
 }
 
