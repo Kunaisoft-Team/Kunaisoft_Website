@@ -1,36 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { parseFeed } from "https://deno.land/x/rss/mod.ts";
+import { enhanceContent } from './utils/contentEnhancer.ts';
+import { getRandomPlaceholderImage } from './utils/imageUtils.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Placeholder images for posts without images
-const PLACEHOLDER_IMAGES = [
-  'https://images.unsplash.com/photo-1649972904349-6e44c42644a7',
-  'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b',
-  'https://images.unsplash.com/photo-1518770660439-4636190af475',
-  'https://images.unsplash.com/photo-1461749280684-dccba630e2f6',
-  'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d'
-];
-
-// Get a random placeholder image
-function getRandomPlaceholder() {
-  const index = Math.floor(Math.random() * PLACEHOLDER_IMAGES.length);
-  return `${PLACEHOLDER_IMAGES[index]}?auto=format&fit=crop&w=1200&q=80`;
-}
-
-// Validate and format URL
-function formatUrl(url: string): string {
-  try {
-    return new URL(url).toString();
-  } catch {
-    return '';
-  }
-}
-
-// Generate a URL-friendly slug
 function generateSlug(title: string): string {
   return title
     .toLowerCase()
@@ -38,7 +15,6 @@ function generateSlug(title: string): string {
     .replace(/(^-|-$)/g, '');
 }
 
-// Handle CORS preflight requests
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -47,7 +23,6 @@ Deno.serve(async (req) => {
   try {
     console.log('Starting RSS fetch from Machine Learning Mastery...')
     
-    // Create Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -75,18 +50,15 @@ Deno.serve(async (req) => {
       .eq('name', 'ai_tools')
       .single()
 
-    let tagId
-    if (!aiToolsTag) {
+    let tagId = aiToolsTag?.id
+
+    if (!tagId) {
       const { data: newTag } = await supabaseClient
         .from('tags')
-        .insert({
-          name: 'ai_tools'
-        })
+        .insert({ name: 'ai_tools' })
         .select()
         .single()
       tagId = newTag?.id
-    } else {
-      tagId = aiToolsTag.id
     }
 
     // Fetch RSS feed
@@ -104,18 +76,15 @@ Deno.serve(async (req) => {
     if (feed.entries) {
       for (const entry of feed.entries) {
         const title = entry.title?.value || entry.title
-        const content = entry.content?.value || entry.description?.value || entry.description || ''
-        const excerpt = content.substring(0, 297) + '...' // Ensure we don't exceed text field limits
-        const originalLink = entry.links?.[0]?.href || entry.link || ''
-        
-        // Generate a proper slug for internal routing
-        const slug = generateSlug(title);
+        const originalContent = entry.content?.value || entry.description?.value || entry.description || ''
         
         // Skip if any required field is missing
-        if (!title || !content) {
+        if (!title || !originalContent) {
           console.log(`Skipping entry due to missing required fields: ${title}`)
           continue
         }
+
+        const slug = generateSlug(title)
 
         try {
           // Check if post already exists
@@ -126,12 +95,15 @@ Deno.serve(async (req) => {
             .single()
 
           if (!existingPost) {
-            console.log('Creating new post:', title, 'with author_id:', kunaisoftProfile.id)
+            console.log('Creating new post:', title)
             
-            // Get a random placeholder image
-            const imageUrl = getRandomPlaceholder();
+            // Enhance content if needed
+            const { content, excerpt, readingTime } = enhanceContent(originalContent, title)
             
-            // Insert new post with all required fields
+            // Get a unique image for this post
+            const imageUrl = getRandomPlaceholderImage()
+            
+            // Insert new post
             const { data: newPost, error: postError } = await supabaseClient
               .from('posts')
               .insert({
@@ -141,7 +113,7 @@ Deno.serve(async (req) => {
                 author_id: kunaisoftProfile.id,
                 slug,
                 image_url: imageUrl,
-                reading_time_minutes: Math.ceil(content.split(' ').length / 200), // Estimate reading time
+                reading_time_minutes: readingTime,
                 meta_description: excerpt,
                 meta_keywords: ['ai', 'machine learning', 'tutorial']
               })
