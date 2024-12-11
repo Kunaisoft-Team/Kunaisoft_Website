@@ -20,6 +20,8 @@ interface BlogPostProps {
 }
 
 export function BlogPost({ post }: BlogPostProps) {
+  const authorName = post.profiles?.full_name || "Kunaisoft News";
+  
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
       <CardHeader className="p-0">
@@ -42,11 +44,9 @@ export function BlogPost({ post }: BlogPostProps) {
         )}
       </CardContent>
       <CardFooter className="px-6 py-4 bg-gray-50">
-        {post.profiles && (
-          <div className="text-sm text-gray-500">
-            By {post.profiles.full_name} • {new Date(post.created_at).toLocaleDateString()}
-          </div>
-        )}
+        <div className="text-sm text-gray-500">
+          By {authorName} • {new Date(post.created_at).toLocaleDateString()}
+        </div>
       </CardFooter>
     </Card>
   );

@@ -1,12 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const RSS_BOT_ID = '00000000-0000-0000-0000-000000000001'; // Fixed UUID for RSS Bot
+const RSS_BOT_ID = '00000000-0000-0000-0000-000000000001'; // Fixed UUID for Kunaisoft News bot
 
 export async function getRSSBotProfile(supabase: any) {
   console.log('Getting or creating Kunaisoft News profile...');
   
   try {
-    // Check if RSS Bot profile exists
+    // Check if Kunaisoft News profile exists
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('id')
@@ -21,7 +21,7 @@ export async function getRSSBotProfile(supabase: any) {
           id: RSS_BOT_ID,
           full_name: 'Kunaisoft News',
           avatar_url: null,
-          is_bot: true  // Set is_bot to true for the RSS bot
+          is_bot: true  // Set is_bot to true for the Kunaisoft News bot
         })
         .select()
         .single();
