@@ -11,7 +11,6 @@ export async function fetchReliableSources(supabase: ReturnType<typeof createCli
 
   console.log('Fetching RSS sources...');
   
-  // Using Supabase's filter syntax for OR conditions
   const { data: sources, error: sourcesError } = await supabase
     .from('rss_sources')
     .select('*')
@@ -35,7 +34,7 @@ export async function fetchReliableSources(supabase: ReturnType<typeof createCli
 
 export async function fetchRSSFeed(url: string) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+  const timeout = setTimeout(() => controller.abort(), 10000);
 
   try {
     console.log(`Attempting to fetch RSS feed from: ${url}`);
@@ -76,7 +75,6 @@ export async function fetchRSSFeed(url: string) {
       throw new Error('Failed to parse XML feed: null result');
     }
 
-    // Safely extract entries with null checks
     const entries = [];
     if (parsedXML.rss?.channel?.item) {
       const items = Array.isArray(parsedXML.rss.channel.item) 

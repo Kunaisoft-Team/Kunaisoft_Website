@@ -73,7 +73,7 @@ serve(async (req) => {
               continue;
             }
 
-            const post = await processAndStorePost(supabaseClient, entry, botId);
+            const post = await processAndStorePost(supabaseClient, entry, botId, source.url);
             if (post) {
               results.push(post);
               console.log(`Created post: ${post.title}`);
