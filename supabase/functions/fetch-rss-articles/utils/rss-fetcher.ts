@@ -11,14 +11,12 @@ export async function fetchReliableSources(supabase: ReturnType<typeof createCli
 
   console.log('Fetching RSS sources...');
   
-  // Create an array of conditions for each reliable source
-  const conditions = RELIABLE_SOURCES.map(domain => `url.ilike('%${domain}%')`).join(' or ');
-  
+  // Using Supabase's filter syntax for OR conditions
   const { data: sources, error: sourcesError } = await supabase
     .from('rss_sources')
     .select('*')
     .eq('active', true)
-    .or(conditions)
+    .or(RELIABLE_SOURCES.map(domain => `url.ilike.%${domain}%`).join(','))
     .limit(5);
 
   if (sourcesError) {
