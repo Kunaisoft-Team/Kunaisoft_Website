@@ -15,20 +15,25 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Get bot profile for RSS feed posts
-    const { data: botProfile, error: botError } = await supabaseClient
+    // Get first available bot profile for RSS feed posts
+    const { data: botProfiles, error: botError } = await supabaseClient
       .from('profiles')
       .select('id')
       .eq('is_bot', true)
-      .single();
+      .limit(1);
 
-    if (botError || !botProfile) {
-      console.error('Error fetching bot profile:', botError);
-      throw new Error('Bot profile not found');
+    if (botError) {
+      console.error('Error fetching bot profiles:', botError);
+      throw new Error('Failed to fetch bot profiles');
     }
 
-    const botId = botProfile.id;
-    console.log('Bot ID:', botId);
+    if (!botProfiles || botProfiles.length === 0) {
+      console.error('No bot profiles found');
+      throw new Error('No bot profiles found');
+    }
+
+    const botId = botProfiles[0].id;
+    console.log('Using Bot ID:', botId);
 
     let totalNewPosts = 0;
     const errors: string[] = [];
