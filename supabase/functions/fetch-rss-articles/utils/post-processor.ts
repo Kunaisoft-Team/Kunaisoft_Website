@@ -59,12 +59,12 @@ export async function processAndStorePost(
                  entry.content?._text ||
                  entry.description?._text ||
                  entry.summary?._text ||
-                 'No content available';
+                 'Not content available';
 
     console.log(`Processing entry: "${title}" (content length: ${content.length})`);
 
     // Basic validation
-    if (title === 'Untitled Post' && content === 'No content available') {
+    if (title === 'Untitled Post' && content === 'Not content available') {
       console.log('Skipping entry: Both title and content are missing');
       return null;
     }
