@@ -1,4 +1,4 @@
-import { PLACEHOLDER_IMAGES } from './imageUtils';
+import { PLACEHOLDER_IMAGES } from './imageUtils.ts';
 
 interface EnhancedContent {
   content: string;
