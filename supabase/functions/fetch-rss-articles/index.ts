@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
-import { Feed } from "https://deno.land/x/rss@1.0.0/mod.ts";
+import { parse } from "https://deno.land/x/rss@0.5.8/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,9 +22,9 @@ Deno.serve(async (req) => {
     }
 
     const xml = await response.text()
-    const feed = await Feed.load(xml)
+    const feed = await parse(xml)
     
-    console.log(`Fetched ${feed.entries.length} articles from RSS feed`)
+    console.log(`Fetched ${feed.entries?.length || 0} articles from RSS feed`)
 
     // Create Supabase client
     const supabaseClient = createClient(
@@ -32,59 +32,63 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Process each article
-    for (const entry of feed.entries) {
-      const title = entry.title?.value
-      const content = entry.content?.value || entry.description?.value || ''
-      const excerpt = content.substring(0, 300) + '...'
-      const link = entry.links[0]?.href
-      
-      // Check if post already exists
-      const { data: existingPost } = await supabaseClient
-        .from('posts')
-        .select('id')
-        .eq('title', title)
+    // Get or create bot profile for RSS posts
+    const { data: botProfile } = await supabaseClient
+      .from('profiles')
+      .select('id')
+      .eq('full_name', 'ML Mastery Bot')
+      .eq('is_bot', true)
+      .single()
+
+    let botId
+    if (!botProfile) {
+      const { data: newBot } = await supabaseClient
+        .from('profiles')
+        .insert({
+          full_name: 'ML Mastery Bot',
+          is_bot: true,
+        })
+        .select()
         .single()
+      botId = newBot?.id
+    } else {
+      botId = botProfile.id
+    }
 
-      if (!existingPost) {
-        // Get or create bot profile for RSS posts
-        const { data: botProfile } = await supabaseClient
-          .from('profiles')
-          .select('id')
-          .eq('full_name', 'ML Mastery Bot')
-          .eq('is_bot', true)
-          .single()
-
-        let botId
-        if (!botProfile) {
-          const { data: newBot } = await supabaseClient
-            .from('profiles')
-            .insert({
-              full_name: 'ML Mastery Bot',
-              is_bot: true,
-            })
-            .select()
+    // Process each article
+    if (feed.entries) {
+      for (const entry of feed.entries) {
+        const title = entry.title?.value
+        const content = entry.content?.value || entry.description?.value || ''
+        const excerpt = content.substring(0, 300) + '...'
+        const link = entry.links?.[0]?.href
+        
+        if (title) {
+          // Check if post already exists
+          const { data: existingPost } = await supabaseClient
+            .from('posts')
+            .select('id')
+            .eq('title', title)
             .single()
-          botId = newBot?.id
-        } else {
-          botId = botProfile.id
-        }
 
-        // Insert new post
-        const { error: insertError } = await supabaseClient
-          .from('posts')
-          .insert({
-            title,
-            content,
-            excerpt,
-            author_id: botId,
-            slug: link,
-          })
+          if (!existingPost) {
+            // Insert new post
+            const { error: insertError } = await supabaseClient
+              .from('posts')
+              .insert({
+                title,
+                content,
+                excerpt,
+                author_id: botId,
+                slug: link,
+              })
 
-        if (insertError) {
-          console.error('Error inserting post:', insertError)
-        } else {
-          console.log('Successfully inserted post:', title)
+            if (insertError) {
+              console.error('Error inserting post:', insertError)
+            } else {
+              console.log('Successfully inserted post:', title)
+            }
+          }
         }
       }
     }
