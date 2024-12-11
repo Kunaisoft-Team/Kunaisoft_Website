@@ -42,32 +42,37 @@ export function useBlogPosts({
         .from("posts")
         .select(`
           *,
-          profiles!inner (
+          profiles (
             id,
             full_name,
             avatar_url,
             created_at
-          ),
-          posts_tags!inner(tag_id)
+          )
         `, { count: "exact" });
 
-      if (selectedTag) {
+      if (selectedTag && selectedTag !== 'all') {
         query = query.eq("posts_tags.tag_id", selectedTag);
       }
-      if (selectedYear) {
-        query = query.gte("created_at", `${selectedYear}-01-01`)
-          .lt("created_at", `${selectedYear + 1}-01-01`);
+      if (selectedYear && selectedYear !== 'all') {
+        const year = parseInt(selectedYear);
+        query = query.gte("created_at", `${year}-01-01`)
+          .lt("created_at", `${year + 1}-01-01`);
       }
-      if (selectedAuthor) {
+      if (selectedAuthor && selectedAuthor !== 'all') {
         query = query.eq("author_id", selectedAuthor);
       }
 
       const from = (currentPage - 1) * postsPerPage;
       const to = from + postsPerPage - 1;
       
-      const { data, count } = await query
+      const { data, count, error } = await query
         .order("created_at", { ascending: false })
         .range(from, to);
+
+      if (error) {
+        console.error('Error fetching posts:', error);
+        return;
+      }
 
       if (data && count) {
         const transformedPosts = data.map(post => ({
