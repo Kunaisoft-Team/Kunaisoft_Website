@@ -18,6 +18,7 @@ interface UseBlogPostsProps {
   selectedTag: string | null;
   selectedYear: number | null;
   selectedAuthor: string | null;
+  searchQuery?: string;
 }
 
 export function useBlogPosts({
@@ -25,11 +26,12 @@ export function useBlogPosts({
   selectedTag,
   selectedYear,
   selectedAuthor,
+  searchQuery,
 }: UseBlogPostsProps) {
   const postsPerPage = 9;
   
   const fetchPosts = async () => {
-    console.log('Fetching posts with params:', { currentPage, selectedTag, selectedYear, selectedAuthor });
+    console.log('Fetching posts with params:', { currentPage, selectedTag, selectedYear, selectedAuthor, searchQuery });
     
     let query = supabase
       .from("posts")
@@ -42,6 +44,11 @@ export function useBlogPosts({
           created_at
         )
       `, { count: "exact" });
+
+    // Apply search if query exists
+    if (searchQuery && searchQuery.trim() !== '') {
+      query = query.textSearch('search_vector', searchQuery.trim());
+    }
 
     if (selectedTag && selectedTag !== 'all') {
       query = query.eq("posts_tags.tag_id", selectedTag);
@@ -91,7 +98,7 @@ export function useBlogPosts({
   };
 
   const { data, isLoading } = useQuery({
-    queryKey: ['posts', currentPage, selectedTag, selectedYear, selectedAuthor],
+    queryKey: ['posts', currentPage, selectedTag, selectedYear, selectedAuthor, searchQuery],
     queryFn: fetchPosts,
     refetchInterval: 60000, // Refetch every minute
   });

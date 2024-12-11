@@ -20,6 +20,7 @@ export type Database = {
           meta_description: string | null
           meta_keywords: string[] | null
           reading_time_minutes: number | null
+          search_vector: unknown | null
           slug: string | null
           title: string
         }
@@ -33,6 +34,7 @@ export type Database = {
           meta_description?: string | null
           meta_keywords?: string[] | null
           reading_time_minutes?: number | null
+          search_vector?: unknown | null
           slug?: string | null
           title: string
         }
@@ -46,6 +48,7 @@ export type Database = {
           meta_description?: string | null
           meta_keywords?: string[] | null
           reading_time_minutes?: number | null
+          search_vector?: unknown | null
           slug?: string | null
           title?: string
         }
@@ -110,36 +113,6 @@ export type Database = {
           full_name?: string
           id?: string
           is_bot?: boolean | null
-        }
-        Relationships: []
-      }
-      rss_sources: {
-        Row: {
-          active: boolean | null
-          category: Database["public"]["Enums"]["rss_category"]
-          created_at: string
-          id: string
-          last_fetch_at: string | null
-          name: string
-          url: string
-        }
-        Insert: {
-          active?: boolean | null
-          category: Database["public"]["Enums"]["rss_category"]
-          created_at?: string
-          id?: string
-          last_fetch_at?: string | null
-          name: string
-          url: string
-        }
-        Update: {
-          active?: boolean | null
-          category?: Database["public"]["Enums"]["rss_category"]
-          created_at?: string
-          id?: string
-          last_fetch_at?: string | null
-          name?: string
-          url?: string
         }
         Relationships: []
       }
