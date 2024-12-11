@@ -53,42 +53,64 @@ Deno.serve(async (req) => {
       try {
         console.log(`Fetching RSS feed: ${source.name} (${source.url})`)
         
-        const response = await fetch(source.url, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; RSS-Reader/1.0)',
-          },
-        })
+        // Add specific User-Agent headers for different sources
+        const headers = {
+          'User-Agent': 'Mozilla/5.0 (compatible; RSSBot/1.0; +https://www.example.com/bot)',
+          'Accept': 'application/rss+xml, application/xml, text/xml, application/atom+xml',
+        }
+
+        // Add specific headers for OpenAI blog
+        if (source.url.includes('openai.com')) {
+          headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+        
+        const response = await fetch(source.url, { headers })
         
         if (!response.ok) {
-          console.error(`HTTP error fetching ${source.name}: ${response.status}`)
+          console.error(`HTTP error fetching ${source.name}: ${response.status} - ${response.statusText}`)
           results.push({ 
             source: source.name, 
             status: 'error', 
-            message: `HTTP error! status: ${response.status}` 
+            message: `HTTP error! status: ${response.status} - ${response.statusText}` 
           })
           continue
         }
         
         const xml = await response.text()
-        const parsedXML = parseXML(xml)
         
-        // Extract feed entries from the parsed XML
-        const entries = parsedXML.rss?.channel?.item || []
-        
-        console.log(`Successfully parsed feed: ${source.name}`)
-        results.push({ 
-          source: source.name, 
-          status: 'success',
-          entries: entries.length || 0 
-        })
+        try {
+          const parsedXML = parseXML(xml)
+          
+          // Check if we have a valid RSS structure
+          if (!parsedXML?.rss?.channel) {
+            throw new Error('Invalid RSS feed structure')
+          }
+          
+          // Extract feed entries from the parsed XML
+          const entries = parsedXML.rss.channel.item || []
+          
+          console.log(`Successfully parsed feed: ${source.name} with ${entries.length} entries`)
+          results.push({ 
+            source: source.name, 
+            status: 'success',
+            entries: entries.length
+          })
 
-        const { error: updateError } = await supabase
-          .from('rss_sources')
-          .update({ last_fetch_at: new Date().toISOString() })
-          .eq('id', source.id)
+          const { error: updateError } = await supabase
+            .from('rss_sources')
+            .update({ last_fetch_at: new Date().toISOString() })
+            .eq('id', source.id)
 
-        if (updateError) {
-          console.error(`Error updating last_fetch_at for ${source.name}:`, updateError)
+          if (updateError) {
+            console.error(`Error updating last_fetch_at for ${source.name}:`, updateError)
+          }
+        } catch (parseError) {
+          console.error(`Error parsing XML for ${source.name}:`, parseError)
+          results.push({ 
+            source: source.name, 
+            status: 'error', 
+            message: `XML parsing error: ${parseError.message}` 
+          })
         }
 
       } catch (error) {
