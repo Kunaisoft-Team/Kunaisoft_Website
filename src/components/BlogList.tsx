@@ -9,6 +9,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { Tables } from "@/integrations/supabase/types";
 
 interface BlogListProps {
   currentPage: number;
@@ -18,6 +19,17 @@ interface BlogListProps {
   selectedAuthor: string | null;
 }
 
+type Profile = {
+  id: string;
+  full_name: string;
+  avatar_url: string | null;
+  created_at: string;
+};
+
+type PostWithProfile = Tables<'posts'> & {
+  profiles: Profile;
+};
+
 export function BlogList({
   currentPage,
   onPageChange,
@@ -25,7 +37,7 @@ export function BlogList({
   selectedYear,
   selectedAuthor,
 }: BlogListProps) {
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<PostWithProfile[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const postsPerPage = 9;
 
@@ -63,7 +75,7 @@ export function BlogList({
       .range(from, to);
 
     if (data && count) {
-      setPosts(data);
+      setPosts(data as PostWithProfile[]);
       setTotalPages(Math.ceil(count / postsPerPage));
     }
   }
