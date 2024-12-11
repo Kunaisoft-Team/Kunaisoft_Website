@@ -95,18 +95,21 @@ export type Database = {
           created_at: string
           full_name: string
           id: string
+          is_bot: boolean | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
           full_name: string
           id: string
+          is_bot?: boolean | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
           full_name?: string
           id?: string
+          is_bot?: boolean | null
         }
         Relationships: []
       }

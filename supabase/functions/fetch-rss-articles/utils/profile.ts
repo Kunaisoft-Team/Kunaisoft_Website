@@ -20,7 +20,8 @@ export async function getRSSBotProfile(supabase: any) {
         .insert({
           id: RSS_BOT_ID,
           full_name: 'RSS Bot',
-          avatar_url: null
+          avatar_url: null,
+          is_bot: true  // Set is_bot to true for the RSS bot
         })
         .select()
         .single();
