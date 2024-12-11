@@ -5,15 +5,21 @@ import { createSlug } from './content.ts';
 
 export async function processAndStorePost(supabase: ReturnType<typeof createClient>, entry: any, botId: string, sourceUrl: string) {
   try {
-    if (!entry?.title?._text) {
-      console.log('Skipping entry without title');
-      return null;
-    }
+    // Enhanced title extraction with fallbacks
+    const title = entry?.title?._text || 
+                 entry?.title || 
+                 entry?.description?._text?.substring(0, 100) || 
+                 `Article from ${sourceUrl}`;
 
-    console.log('Processing post:', entry.title._text);
+    console.log('Processing entry with title:', title);
 
-    // Extract and format content
-    const content = entry.content?._text || entry.description?._text || "No content available";
+    // Extract and format content with better error handling
+    const content = entry?.content?._text || 
+                   entry?.description?._text || 
+                   "This article's content is being processed. Please check back later.";
+
+    console.log('Content length:', content.length);
+
     const keyPoints = extractKeyPoints(content);
     const quote = extractQuote(content);
     const statistics = extractStatistics(content);
@@ -22,10 +28,10 @@ export async function processAndStorePost(supabase: ReturnType<typeof createClie
     const formattedContent = `
       <article class="prose prose-lg max-w-none">
         <header class="mb-8">
-          <h1 class="text-4xl font-bold text-[#1A1F2C] mb-4">${entry.title._text}</h1>
+          <h1 class="text-4xl font-bold text-[#1A1F2C] mb-4">${title}</h1>
           ${entry.image_url ? `
             <div class="relative h-[400px] mb-6">
-              <img src="${entry.image_url}" alt="${entry.title._text}" class="w-full h-full object-cover rounded-lg" />
+              <img src="${entry.image_url}" alt="${title}" class="w-full h-full object-cover rounded-lg" />
             </div>
           ` : ''}
         </header>
@@ -93,20 +99,28 @@ export async function processAndStorePost(supabase: ReturnType<typeof createClie
     // Calculate reading time (assuming average reading speed of 200 words per minute)
     const readingTimeMinutes = Math.ceil(wordCount / 200);
 
-    // Prepare post data
+    // Generate a unique slug
+    const slug = createSlug(title);
+    console.log('Generated slug:', slug);
+
+    // Prepare post data with enhanced error handling
     const postData = {
-      title: entry.title._text,
+      title,
       content: formattedContent,
-      excerpt: entry.description?._text?.substring(0, 300) || null,
+      excerpt: entry?.description?._text?.substring(0, 300) || 
+              content.substring(0, 300) || 
+              "Read more about this interesting article...",
       author_id: botId,
-      slug: createSlug(entry.title._text),
+      slug,
       image_url: entry.image_url,
       reading_time_minutes: readingTimeMinutes,
-      meta_description: entry.description?._text?.substring(0, 160) || null,
+      meta_description: entry?.description?._text?.substring(0, 160) || 
+                       content.substring(0, 160) || 
+                       `Article about ${title}`,
       meta_keywords: extractKeywords(content)
     };
 
-    // Store in database
+    // Store in database with error handling
     const { data, error } = await supabase
       .from('posts')
       .insert(postData)
