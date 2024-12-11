@@ -40,7 +40,7 @@ export function RSSFeedTester() {
         )}
       </div>
       <div className="mt-2 text-xs text-gray-500">
-        (RSS feeds are automatically fetched every hour)
+        (RSS feeds are automatically fetched every minute)
       </div>
     </div>
   );
