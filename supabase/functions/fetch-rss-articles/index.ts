@@ -58,6 +58,12 @@ Deno.serve(async (req) => {
           'Accept': 'application/rss+xml, application/xml, text/xml',
           'User-Agent': 'RSS Reader Bot/1.0'
         }
+
+        // Add specific handling for Lifehacker
+        if (source.url.includes('lifehacker.com')) {
+          headers['Accept'] = 'application/rss+xml, application/xml, text/xml, application/atom+xml';
+          headers['Cache-Control'] = 'no-cache';
+        }
         
         const response = await fetch(source.url, { headers })
         
@@ -73,16 +79,30 @@ Deno.serve(async (req) => {
         
         const xml = await response.text()
         
+        // Check if we got a valid XML response
+        if (!xml || xml.trim().length === 0) {
+          console.error(`Empty response from ${source.name}`);
+          results.push({
+            source: source.name,
+            status: 'error',
+            message: 'Empty response received'
+          });
+          continue;
+        }
+        
         try {
           const parsedXML = parseXML(xml)
           
-          // Check if we have a valid RSS structure
+          // Validate RSS structure
           if (!parsedXML?.rss?.channel) {
-            throw new Error('Invalid RSS feed structure')
+            // Check for Atom format as fallback
+            if (!parsedXML?.feed) {
+              throw new Error('Invalid feed structure - neither RSS nor Atom format detected')
+            }
           }
           
           // Extract feed entries from the parsed XML
-          const entries = parsedXML.rss.channel.item || []
+          const entries = parsedXML.rss?.channel?.item || parsedXML.feed?.entry || []
           
           console.log(`Successfully parsed feed: ${source.name} with ${entries.length} entries`)
           results.push({ 
@@ -100,11 +120,11 @@ Deno.serve(async (req) => {
             console.error(`Error updating last_fetch_at for ${source.name}:`, updateError)
           }
         } catch (parseError) {
-          console.error(`Error parsing XML for ${source.name}:`, parseError)
+          console.error(`Error parsing feed for ${source.name}:`, parseError)
           results.push({ 
             source: source.name, 
             status: 'error', 
-            message: `XML parsing error: ${parseError.message}` 
+            message: `Feed parsing error: ${parseError.message}` 
           })
         }
 
