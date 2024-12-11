@@ -16,6 +16,8 @@ export type Database = {
           created_at: string
           excerpt: string | null
           id: string
+          image_url: string | null
+          slug: string | null
           title: string
         }
         Insert: {
@@ -24,6 +26,8 @@ export type Database = {
           created_at?: string
           excerpt?: string | null
           id?: string
+          image_url?: string | null
+          slug?: string | null
           title: string
         }
         Update: {
@@ -32,9 +36,41 @@ export type Database = {
           created_at?: string
           excerpt?: string | null
           id?: string
+          image_url?: string | null
+          slug?: string | null
           title?: string
         }
         Relationships: []
+      }
+      posts_tags: {
+        Row: {
+          post_id: string
+          tag_id: string
+        }
+        Insert: {
+          post_id: string
+          tag_id: string
+        }
+        Update: {
+          post_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_tags_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -54,6 +90,24 @@ export type Database = {
           created_at?: string
           full_name?: string
           id?: string
+        }
+        Relationships: []
+      }
+      tags: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
         }
         Relationships: []
       }

@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 type Profile = {
   id: string;
@@ -51,32 +54,44 @@ export function BlogPost() {
   }
 
   if (loading) {
-    return <div>Loading posts...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <p className="text-gray-500">Loading posts...</p>
+      </div>
+    );
   }
 
   return (
     <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
       {posts.map((post) => (
-        <article key={post.id} className="bg-white rounded-lg shadow">
-          <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4">{post.title}</h2>
+        <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+          <CardHeader className="p-0">
+            <AspectRatio ratio={16 / 9}>
+              <img
+                src={post.image_url || '/placeholder.svg'}
+                alt={post.title}
+                className="object-cover w-full h-full"
+              />
+            </AspectRatio>
+          </CardHeader>
+          <CardContent className="p-6">
+            <Link to={`/blog/${post.slug || post.id}`}>
+              <h2 className="text-2xl font-bold mb-4 hover:text-[#0BD255] transition-colors">
+                {post.title}
+              </h2>
+            </Link>
             {post.excerpt && (
-              <p className="text-gray-600 mb-4">{post.excerpt}</p>
+              <p className="text-gray-600 mb-4 line-clamp-3">{post.excerpt}</p>
             )}
-            <div className="prose max-w-none">
-              {post.content.split('\n\n').map((paragraph, index) => (
-                <p key={index} className="mb-4">
-                  {paragraph.trim()}
-                </p>
-              ))}
-            </div>
+          </CardContent>
+          <CardFooter className="px-6 py-4 bg-gray-50">
             {post.profiles && (
-              <div className="mt-4 text-sm text-gray-500">
-                By {post.profiles.full_name}
+              <div className="text-sm text-gray-500">
+                By {post.profiles.full_name} • {new Date(post.created_at).toLocaleDateString()}
               </div>
             )}
-          </div>
-        </article>
+          </CardFooter>
+        </Card>
       ))}
     </div>
   );
