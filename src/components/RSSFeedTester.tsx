@@ -15,6 +15,7 @@ export function RSSFeedTester() {
         headers: {
           'Content-Type': 'application/json',
         },
+        body: {} // Empty body but required for POST request
       });
       
       if (error) {
