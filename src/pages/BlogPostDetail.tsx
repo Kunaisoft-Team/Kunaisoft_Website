@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { supabase } from "@/integrations/supabase/client";
 import { Helmet } from "react-helmet";
-import { Share2, Twitter, Linkedin, Clock, Calendar } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
-import { KeyTakeaways } from "@/components/blog/KeyTakeaways";
+import { BlogHeader } from "@/components/blog/BlogHeader";
+import { BlogContent } from "@/components/blog/BlogContent";
 
 const BlogPostDetail = () => {
   const { slug } = useParams();
@@ -21,14 +19,12 @@ const BlogPostDetail = () => {
 
   useEffect(() => {
     if (post?.content) {
-      // Extract key points from the content
       const extractedTakeaways = extractTakeaways(post.content);
       setTakeaways(extractedTakeaways);
     }
   }, [post?.content]);
 
   const extractTakeaways = (content: string): string[] => {
-    // Simple extraction logic - you can enhance this based on your needs
     const paragraphs = content.split('</p>');
     const points = paragraphs
       .slice(0, 3)
@@ -86,14 +82,6 @@ const BlogPostDetail = () => {
     );
   }
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
   return (
     <main className="min-h-screen bg-white">
       <Helmet>
@@ -114,131 +102,24 @@ const BlogPostDetail = () => {
 
       <article className="w-full bg-[#F1F0FB] pt-20">
         <div className="max-w-[800px] mx-auto px-4 py-12 animate-fade-in">
-          <header className="text-center mb-12">
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-600 mb-6">
-              <Calendar className="w-4 h-4" />
-              <time dateTime={post.created_at}>
-                {formatDate(post.created_at)}
-              </time>
-              <span>•</span>
-              <Clock className="w-4 h-4" />
-              <span>{post.reading_time_minutes} min read</span>
-            </div>
-
-            <h1 className="text-4xl md:text-5xl font-bold mb-8 text-[#1A1F2C] leading-tight">
-              {post.title}
-            </h1>
-
-            {post.excerpt && (
-              <p className="text-xl text-gray-600 leading-relaxed mb-10 max-w-2xl mx-auto">
-                {post.excerpt}
-              </p>
-            )}
-
-            <div className="flex items-center justify-center gap-4 mb-8">
-              <img
-                src={
-                  post.profiles?.avatar_url ||
-                  "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80"
-                }
-                alt={post.profiles?.full_name}
-                className="w-12 h-12 rounded-full object-cover border-2 border-primary"
-              />
-              <div className="text-left">
-                <p className="font-semibold text-[#1A1F2C]">
-                  {post.profiles?.full_name}
-                </p>
-                <p className="text-sm text-gray-600">
-                  Content Strategist at Kunaisoft
-                </p>
-              </div>
-            </div>
-
-            <div className="flex justify-center gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={shareOnTwitter}
-              >
-                <Twitter className="w-4 h-4" />
-                Share on Twitter
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={shareOnLinkedIn}
-              >
-                <Linkedin className="w-4 h-4" />
-                Share on LinkedIn
-              </Button>
-            </div>
-          </header>
+          <BlogHeader
+            title={post.title}
+            excerpt={post.excerpt}
+            createdAt={post.created_at}
+            readingTimeMinutes={post.reading_time_minutes}
+            author={{
+              fullName: post.profiles.full_name,
+              avatarUrl: post.profiles.avatar_url,
+            }}
+          />
         </div>
 
-        <div className="bg-white w-full py-16">
-          <div className="max-w-[800px] mx-auto px-4">
-            {post.image_url && (
-              <figure className="mb-16 animate-fade-in">
-                <img
-                  src={post.image_url}
-                  alt={post.title}
-                  className="w-full rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300"
-                />
-              </figure>
-            )}
-
-            <div
-              className={cn(
-                "prose prose-lg max-w-none",
-                "prose-headings:text-[#1A1F2C] prose-headings:font-bold",
-                "prose-h2:text-3xl prose-h2:mt-12 prose-h2:mb-6",
-                "prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-4",
-                "prose-p:text-gray-600 prose-p:leading-relaxed prose-p:mb-6",
-                "prose-a:text-primary hover:prose-a:text-primary/80",
-                "prose-strong:text-[#1A1F2C] prose-strong:font-semibold",
-                "prose-ul:my-6 prose-ul:list-disc prose-ul:pl-6",
-                "prose-ol:my-6 prose-ol:list-decimal prose-ol:pl-6",
-                "prose-li:text-gray-600 prose-li:mb-2",
-                "prose-img:rounded-xl prose-img:my-8 prose-img:shadow-lg",
-                "prose-blockquote:border-l-4 prose-blockquote:border-primary",
-                "prose-blockquote:pl-6 prose-blockquote:italic",
-                "prose-blockquote:text-gray-600 prose-blockquote:my-8",
-                "animate-fade-in"
-              )}
-              dangerouslySetInnerHTML={{ __html: post.content }}
-            />
-
-            <KeyTakeaways takeaways={takeaways} />
-
-            <div className="mt-16 pt-8 border-t border-gray-100 animate-fade-in">
-              <h3 className="text-lg font-semibold text-[#1A1F2C] mb-4">
-                Share this article
-              </h3>
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={shareOnTwitter}
-                >
-                  <Twitter className="w-4 h-4" />
-                  Share on Twitter
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={shareOnLinkedIn}
-                >
-                  <Linkedin className="w-4 h-4" />
-                  Share on LinkedIn
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <BlogContent
+          content={post.content}
+          imageUrl={post.image_url}
+          title={post.title}
+          takeaways={takeaways}
+        />
       </article>
     </main>
   );
