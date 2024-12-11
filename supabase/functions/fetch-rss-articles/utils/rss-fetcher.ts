@@ -11,12 +11,32 @@ export async function fetchReliableSources(supabase: ReturnType<typeof createCli
 
   console.log('Fetching RSS sources...');
   
+  // Get the latest successful fetch time for each category
+  const { data: lastFetches, error: fetchError } = await supabase
+    .from('rss_sources')
+    .select('category, last_fetch_at')
+    .order('last_fetch_at', { ascending: false })
+    .limit(5);
+
+  if (fetchError) {
+    console.error('Error fetching last fetch times:', fetchError);
+    return [];
+  }
+
+  // Create a map of categories to their last fetch time
+  const categoryLastFetch = new Map();
+  lastFetches?.forEach(fetch => {
+    if (!categoryLastFetch.has(fetch.category)) {
+      categoryLastFetch.set(fetch.category, fetch.last_fetch_at);
+    }
+  });
+
+  // Get one active source per category
   const { data: sources, error: sourcesError } = await supabase
     .from('rss_sources')
     .select('*')
     .eq('active', true)
-    .or(RELIABLE_SOURCES.map(domain => `url.ilike.%${domain}%`).join(','))
-    .limit(5);
+    .or(RELIABLE_SOURCES.map(domain => `url.ilike.%${domain}%`).join(','));
 
   if (sourcesError) {
     console.error('Error fetching RSS sources:', sourcesError);
@@ -28,8 +48,19 @@ export async function fetchReliableSources(supabase: ReturnType<typeof createCli
     return [];
   }
 
-  console.log(`Found ${sources.length} active RSS sources:`, sources.map(s => s.url));
-  return sources;
+  // Filter to get one source per category
+  const categoryMap = new Map();
+  const filteredSources = sources.filter(source => {
+    if (!categoryMap.has(source.category)) {
+      categoryMap.set(source.category, source);
+      return true;
+    }
+    return false;
+  });
+
+  console.log(`Found ${filteredSources.length} active RSS sources (one per category):`, 
+    filteredSources.map(s => `${s.category}: ${s.url}`));
+  return filteredSources;
 }
 
 export async function fetchRSSFeed(url: string) {
