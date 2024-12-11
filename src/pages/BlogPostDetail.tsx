@@ -31,6 +31,26 @@ const BlogPostDetail = () => {
     return <div>Loading...</div>;
   }
 
+  // Convert markdown-style headers to HTML with proper classes
+  const formatContent = (content: string) => {
+    return content
+      .replace(/^# (.*$)/gm, '<h1 class="text-4xl font-bold mb-6 mt-8">$1</h1>')
+      .replace(/^## (.*$)/gm, '<h2 class="text-3xl font-bold mb-5 mt-7">$1</h2>')
+      .replace(/^### (.*$)/gm, '<h3 class="text-2xl font-bold mb-4 mt-6">$1</h3>')
+      .replace(/\n\n/g, '</p><p class="mb-4">')
+      // Convert bullet points
+      .replace(/^- (.*$)/gm, '<li class="ml-6 mb-2">$1</li>')
+      // Convert numbered lists
+      .replace(/^\d\. (.*$)/gm, '<li class="ml-6 mb-2">$1</li>')
+      // Wrap paragraphs
+      .replace(/^(?!<[hl]|<li)(.*$)/gm, '<p class="mb-4">$1</p>')
+      // Wrap lists
+      .replace(/<li.*?>([\s\S]*?)(?=<\/li>)/g, '<ul class="list-disc mb-4">$1</ul>')
+      // Add emphasis
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>');
+  };
+
   return (
     <main className="min-h-screen pt-20">
       <Helmet>
@@ -55,7 +75,7 @@ const BlogPostDetail = () => {
           />
         )}
 
-        <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
+        <h1 className="text-5xl font-bold mb-8">{post.title}</h1>
 
         <div className="flex items-center mb-8">
           {post.profiles.avatar_url && (
@@ -75,8 +95,8 @@ const BlogPostDetail = () => {
         </div>
 
         <div 
-          className="prose prose-lg max-w-none"
-          dangerouslySetInnerHTML={{ __html: post.content }}
+          className="prose prose-lg max-w-none prose-headings:font-bold prose-p:text-gray-700 prose-a:text-blue-600 prose-strong:font-bold prose-ul:list-disc prose-ol:list-decimal"
+          dangerouslySetInnerHTML={{ __html: formatContent(post.content) }}
         />
       </article>
     </main>
