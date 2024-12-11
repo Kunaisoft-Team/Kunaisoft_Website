@@ -53,11 +53,12 @@ export function useBlogPosts({
       if (selectedTag && selectedTag !== 'all') {
         query = query.eq("posts_tags.tag_id", selectedTag);
       }
-      if (selectedYear && selectedYear !== 'all') {
-        const year = parseInt(selectedYear);
-        query = query.gte("created_at", `${year}-01-01`)
-          .lt("created_at", `${year + 1}-01-01`);
+      
+      if (selectedYear) {
+        query = query.gte("created_at", `${selectedYear}-01-01`)
+          .lt("created_at", `${selectedYear + 1}-01-01`);
       }
+      
       if (selectedAuthor && selectedAuthor !== 'all') {
         query = query.eq("author_id", selectedAuthor);
       }
