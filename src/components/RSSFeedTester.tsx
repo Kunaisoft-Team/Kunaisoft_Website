@@ -11,7 +11,10 @@ export function RSSFeedTester() {
     try {
       console.log('Initiating RSS feed fetch...');
       const { data, error } = await supabase.functions.invoke('fetch-rss-articles', {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
       
       if (error) {

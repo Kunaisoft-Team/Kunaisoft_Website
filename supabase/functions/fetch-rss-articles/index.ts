@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
   try {
     console.log('Starting RSS feed processing')
     
-    // Initialize Supabase client
+    // Initialize Supabase client with better error handling
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     
@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Get active RSS sources
+    // Get active RSS sources with error logging
     const { data: sources, error: sourcesError } = await supabase
       .from('rss_sources')
       .select('*')
@@ -43,13 +43,18 @@ Deno.serve(async (req) => {
 
     console.log(`Processing ${sources?.length || 0} RSS sources`)
     
-    // Process each source
+    // Process each source with improved error handling
     const results = []
     for (const source of sources || []) {
       try {
         console.log(`Fetching RSS feed: ${source.name} (${source.url})`)
         
-        const response = await fetch(source.url)
+        const response = await fetch(source.url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; RSS-Reader/1.0)',
+          },
+        })
+        
         if (!response.ok) {
           console.error(`HTTP error fetching ${source.name}: ${response.status}`)
           results.push({ 
@@ -71,7 +76,7 @@ Deno.serve(async (req) => {
           entries: feed.entries?.length || 0 
         })
 
-        // Update last fetch time
+        // Update last fetch time with error handling
         const { error: updateError } = await supabase
           .from('rss_sources')
           .update({ last_fetch_at: new Date().toISOString() })
