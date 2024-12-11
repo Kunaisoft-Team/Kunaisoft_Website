@@ -10,19 +10,19 @@ export async function processAndStorePost(
   entry: any,
   botId: string,
   sourceUrl: string,
-  category: string
+  category?: string
 ) {
   try {
     // Extract and enhance content
     const title = entry?.title?._text || 
                  entry?.title || 
-                 `Latest ${category.replace(/_/g, ' ')} Insights`;
+                 `Latest ${category ? category.replace(/_/g, ' ') : 'Technology'} Insights`;
 
     console.log('Processing entry with title:', title);
 
     const rawContent = entry?.content?._text || 
                       entry?.description?._text || 
-                      `Latest insights and developments in ${category.replace(/_/g, ' ')}`;
+                      `Latest insights and developments in ${category ? category.replace(/_/g, ' ') : 'technology'}`;
 
     // Enhance content with CNET style and numbers
     const enhancedContent = await improveWriting(rawContent);
@@ -45,7 +45,7 @@ export async function processAndStorePost(
         author_id: botId,
         excerpt: enhancedContent.substring(0, 300) + '...',
         meta_description: enhancedContent.substring(0, 160),
-        meta_keywords: [category],
+        meta_keywords: category ? [category] : ['technology'],
         reading_time_minutes: Math.ceil(enhancedContent.split(/\s+/).length / 200)
       })
       .select()
