@@ -4,6 +4,7 @@ import { extractKeyPoints, extractQuote, extractStatistics } from './content-ext
 import { createSlug } from './content.ts';
 import { selectRandomPlaceholderImage, generateContentImages } from './image-processor.ts';
 import { improveWriting } from './translation.ts';
+import { expandContent, extractContent } from './content-generator.ts';
 
 let lastUsedImageIndices: number[] = [];
 
@@ -23,10 +24,13 @@ export async function processAndStorePost(
 
     const rawContent = entry?.content?._text || 
                       entry?.description?._text || 
-                      `Latest insights and developments in ${category ? category.replace(/_/g, ' ') : 'technology'}`;
+                      '';
 
+    // Generate expanded content using the category
+    const expandedContent = expandContent(rawContent, title, category);
+    
     // Enhance content
-    const enhancedContent = await improveWriting(rawContent);
+    const enhancedContent = await improveWriting(expandedContent);
     const excerpt = enhancedContent.substring(0, 300) + '...';
 
     // Generate a unique image for the post
