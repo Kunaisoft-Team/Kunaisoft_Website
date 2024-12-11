@@ -171,6 +171,8 @@ export type Database = {
         | "ai_prompts"
         | "productivity"
         | "getting_things_done"
+        | "business_contributions"
+        | "people_contact_networks"
     }
     CompositeTypes: {
       [_ in never]: never

@@ -13,6 +13,7 @@ const corsHeaders = {
 
 async function fetchRSSFeed(url: string) {
   try {
+    console.log(`Fetching RSS feed from ${url}...`)
     const response = await fetch(url)
     const xml = await response.text()
     const parser = new Parser()
