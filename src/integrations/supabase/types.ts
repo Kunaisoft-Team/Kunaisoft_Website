@@ -17,6 +17,9 @@ export type Database = {
           excerpt: string | null
           id: string
           image_url: string | null
+          meta_description: string | null
+          meta_keywords: string[] | null
+          reading_time_minutes: number | null
           slug: string | null
           title: string
         }
@@ -27,6 +30,9 @@ export type Database = {
           excerpt?: string | null
           id?: string
           image_url?: string | null
+          meta_description?: string | null
+          meta_keywords?: string[] | null
+          reading_time_minutes?: number | null
           slug?: string | null
           title: string
         }
@@ -37,10 +43,21 @@ export type Database = {
           excerpt?: string | null
           id?: string
           image_url?: string | null
+          meta_description?: string | null
+          meta_keywords?: string[] | null
+          reading_time_minutes?: number | null
           slug?: string | null
           title?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       posts_tags: {
         Row: {
