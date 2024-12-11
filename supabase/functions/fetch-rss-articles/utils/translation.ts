@@ -3,19 +3,10 @@ export async function translateContent(
   targetLanguage: string = 'en'
 ): Promise<string> {
   try {
-    // Reset and check daily OpenAI API call count
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const dailyCallsKey = `openai_calls_${today.toISOString().split('T')[0]}`;
-    // Reset the counter to 0
-    await Deno.env.set(dailyCallsKey, '0');
-    console.log('Reset OpenAI API calls counter to 0');
-    
-    const currentCalls = 0;
-
-    if (currentCalls >= 5) {
-      console.log('Daily OpenAI API call limit (5) reached. Returning original text.');
+    // For now, we'll skip translation if no OpenAI key is present
+    const openAiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAiKey) {
+      console.log('No OpenAI API key found, skipping translation');
       return text;
     }
 
@@ -24,10 +15,10 @@ export async function translateContent(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${openAiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4',
         messages: [{
           role: 'system',
           content: `You are a professional translator. Translate the following text to ${targetLanguage}. Maintain any HTML formatting if present. Keep technical terms accurate.`
@@ -46,11 +37,6 @@ export async function translateContent(
     }
 
     const data = await response.json();
-    
-    // Increment the daily call counter
-    await Deno.env.set(dailyCallsKey, '1');
-    console.log(`OpenAI API calls today: 1/5`);
-    
     return data.choices[0].message.content;
   } catch (error) {
     console.error('Translation error:', error);
@@ -60,19 +46,10 @@ export async function translateContent(
 
 export async function improveWriting(text: string): Promise<string> {
   try {
-    // Reset and check daily OpenAI API call count
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const dailyCallsKey = `openai_calls_${today.toISOString().split('T')[0]}`;
-    // Reset the counter to 0
-    await Deno.env.set(dailyCallsKey, '0');
-    console.log('Reset OpenAI API calls counter to 0');
-    
-    const currentCalls = 0;
-
-    if (currentCalls >= 5) {
-      console.log('Daily OpenAI API call limit (5) reached. Returning original text.');
+    // Skip if no OpenAI key is present
+    const openAiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAiKey) {
+      console.log('No OpenAI API key found, skipping writing improvement');
       return text;
     }
 
@@ -81,10 +58,10 @@ export async function improveWriting(text: string): Promise<string> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${openAiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4',
         messages: [{
           role: 'system',
           content: 'You are a professional editor. Improve the following text while maintaining its meaning and technical accuracy. Make it more engaging and clearer for English readers.'
@@ -103,11 +80,6 @@ export async function improveWriting(text: string): Promise<string> {
     }
 
     const data = await response.json();
-    
-    // Increment the daily call counter
-    await Deno.env.set(dailyCallsKey, '1');
-    console.log(`OpenAI API calls today: 1/5`);
-    
     return data.choices[0].message.content;
   } catch (error) {
     console.error('Writing improvement error:', error);
