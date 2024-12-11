@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { RichTextEditor } from "./RichTextEditor";
 
 interface PostFormProps {
   title: string;
@@ -48,13 +49,7 @@ export const PostForm = ({
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700">Content</label>
-        <textarea
-          value={content}
-          onChange={(e) => onContentChange(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-          rows={6}
-          required
-        />
+        <RichTextEditor content={content} onChange={onContentChange} />
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
