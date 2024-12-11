@@ -3,7 +3,7 @@ import { parse as parseXML } from "https://deno.land/x/xml@2.1.1/mod.ts";
 import { RSSSource, RSSEntry } from './types.ts';
 import { storeArticleAsPost } from './storage.ts';
 
-export async function fetchRSSSources(supabase: ReturnType<typeof createClient>) {
+export async function fetchRSSSources(supabase: ReturnType<typeof createClient>): Promise<RSSSource[]> {
   console.log('Fetching RSS sources...');
   const { data: sources, error: sourcesError } = await supabase
     .from('rss_sources')
@@ -28,6 +28,11 @@ export async function updateLastFetchTime(
   supabase: ReturnType<typeof createClient>, 
   sourceId: string
 ): Promise<void> {
+  if (!sourceId) {
+    console.error('Invalid source ID provided');
+    throw new Error('Invalid source ID');
+  }
+
   console.log('Updating last fetch time for source:', sourceId);
   const { error: updateError } = await supabase
     .from('rss_sources')
@@ -45,6 +50,11 @@ export async function fetchAndParseRSSFeed(
   source: RSSSource, 
   botId: string
 ): Promise<number> {
+  if (!source || !source.url || !botId) {
+    console.error('Invalid parameters provided:', { source: !!source, botId: !!botId });
+    throw new Error('Invalid parameters for RSS feed processing');
+  }
+
   console.log(`Fetching RSS feed: ${source.name} (${source.url})`);
   
   try {
@@ -61,6 +71,10 @@ export async function fetchAndParseRSSFeed(
     }
     
     const xml = await response.text();
+    if (!xml) {
+      throw new Error('Empty XML response received');
+    }
+
     console.log(`Received XML response of length: ${xml.length}`);
     
     const parsedXML = parseXML(xml);
@@ -79,6 +93,7 @@ export async function fetchAndParseRSSFeed(
     let storedCount = 0;
     for (const entry of entries) {
       try {
+        if (!entry) continue;
         const stored = await storeArticleAsPost(supabase, entry, source.category, botId);
         if (stored) storedCount++;
       } catch (error) {
