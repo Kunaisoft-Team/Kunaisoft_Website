@@ -1,10 +1,10 @@
 export const unsplashImages = [
   // Technology & Innovation
+  "photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&w=1200&q=80", // Tech workspace
+  "photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=1200&q=80", // Programming
+  "photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80", // Code on screen
   "photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80", // Tech abstract
   "photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80", // Digital art
-  "photo-1517433670267-08bbd4be890f?auto=format&fit=crop&w=1200&q=80", // AI concept
-  "photo-1523961131990-5ea7c61b2107?auto=format&fit=crop&w=1200&q=80", // Data visualization
-  "photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80", // Code screen
   
   // Productivity & Workspace
   "photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&w=1200&q=80", // Laptop workspace
@@ -13,12 +13,17 @@ export const unsplashImages = [
   
   // Business & Strategy
   "photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80", // Business meeting
-  "photo-1552664730-d307ca884978?auto=format&fit=crop&w=1200&q=80", // Strategy planning
-  "photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80", // Office collaboration
+  "photo-1552664730-d307ca884978?auto=format&fit=crop&w=1200&q=80", // Team meeting
+  
+  // AI & Technology
+  "photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80", // AI visualization
+  "photo-1676299081847-c887813445d0?auto=format&fit=crop&w=1200&q=80", // Tech pattern
+  
+  // Modern Workspace
+  "photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1200&q=80", // Office setup
+  "photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=1200&q=80", // Clean workspace
+  
+  // People & Collaboration
+  "photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80", // Team work
+  "photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1200&q=80" // Collaboration
 ];
-
-export const categoryImages: { [key: string]: number[] } = {
-  technology: [0, 1, 2, 3, 4],
-  productivity: [5, 6, 7],
-  business: [8, 9, 10],
-};

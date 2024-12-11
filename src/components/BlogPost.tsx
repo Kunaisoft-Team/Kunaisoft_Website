@@ -35,7 +35,7 @@ export function BlogPost({ post }: BlogPostProps) {
           <img
             src={imageError ? 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&w=1200&q=80' : (post.image_url || 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&w=1200&q=80')}
             alt={post.title}
-            className="object-cover w-full h-full rounded-t-lg"
+            className="object-cover w-full h-full rounded-t-lg hover:scale-105 transition-transform duration-500"
             onError={handleImageError}
           />
         </AspectRatio>
@@ -50,8 +50,8 @@ export function BlogPost({ post }: BlogPostProps) {
             year: 'numeric'
           })}</span>
         </div>
-        <Link to={`/blog/${post.slug || post.id}`}>
-          <h2 className="text-2xl font-bold mb-4 text-[#1A1F2C] hover:text-[#9b87f5] transition-colors line-clamp-2">
+        <Link to={`/blog/${post.slug || post.id}`} className="group">
+          <h2 className="text-2xl font-bold mb-4 text-[#1A1F2C] group-hover:text-[#9b87f5] transition-colors line-clamp-2">
             {post.title}
           </h2>
         </Link>
@@ -66,7 +66,7 @@ export function BlogPost({ post }: BlogPostProps) {
           <img
             src={post.profiles?.avatar_url || "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80"}
             alt={authorName}
-            className="w-8 h-8 rounded-full object-cover"
+            className="w-8 h-8 rounded-full object-cover border-2 border-primary"
             onError={(e) => {
               (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80";
             }}
