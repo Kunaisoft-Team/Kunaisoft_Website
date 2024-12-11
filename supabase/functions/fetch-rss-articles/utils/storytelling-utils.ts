@@ -13,62 +13,38 @@ export function createStorytellingContent(content: string, title: string): strin
 
 function createNarrativeIntro(title: string): string {
   return `
-    <section class="prose prose-lg max-w-none mb-8">
-      <p class="text-lg leading-relaxed text-gray-700">
-        Picture a world where ${title.toLowerCase()} transforms the way we work and live. This isn't just a vision of the future - it's happening right now, and innovative organizations are leading the charge.
-      </p>
-    </section>`;
+    In the rapidly evolving landscape of artificial intelligence and productivity tools, staying ahead of the curve is crucial for business success. ${title} represents a significant milestone in how we approach work and innovation. Let's explore the transformative impact of these tools and how they're reshaping the future of work.
+  `;
 }
 
 function createChallengeSection(): string {
   return `
-    <section class="prose prose-lg max-w-none mb-8">
-      <h2 class="text-3xl font-bold text-[#1A1F2C] mb-6">The Challenge</h2>
-      <div class="bg-white p-6 rounded-xl shadow-sm">
-        <p class="text-gray-700">
-          Organizations today face unprecedented challenges in staying competitive and efficient. The rapid pace of technological change, coupled with evolving market demands, creates a complex landscape that requires innovative solutions.
-        </p>
-      </div>
-    </section>`;
+    The Challenge:
+
+    Organizations today face unprecedented challenges in maintaining productivity and efficiency. The sheer volume of tasks, coupled with increasing complexity, creates bottlenecks that traditional approaches struggle to address. Teams need smarter solutions that can scale with their growing demands while maintaining quality and consistency.
+  `;
 }
 
 function createSolutionSection(): string {
   return `
-    <section class="prose prose-lg max-w-none mb-8">
-      <h2 class="text-3xl font-bold text-[#1A1F2C] mb-6">The Solution</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-white p-6 rounded-xl shadow-sm">
-          <h3 class="text-xl font-semibold text-[#1A1F2C] mb-4">Innovation</h3>
-          <p class="text-gray-700">Embracing cutting-edge technologies and methodologies to drive transformation.</p>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm">
-          <h3 class="text-xl font-semibold text-[#1A1F2C] mb-4">Integration</h3>
-          <p class="text-gray-700">Seamlessly combining various tools and approaches for optimal results.</p>
-        </div>
-      </div>
-    </section>`;
+    The Solution:
+
+    Modern AI tools offer a compelling answer to these challenges. By leveraging advanced algorithms and machine learning capabilities, these solutions can automate routine tasks, enhance decision-making processes, and unlock new levels of productivity. The key lies in their ability to learn and adapt to specific use cases while maintaining flexibility for various applications.
+  `;
 }
 
 function createSuccessStories(): string {
   return `
-    <section class="prose prose-lg max-w-none mb-8">
-      <h2 class="text-3xl font-bold text-[#1A1F2C] mb-6">Success Stories</h2>
-      <div class="bg-[#F8F9FB] p-8 rounded-xl">
-        <p class="text-lg leading-relaxed text-gray-700">
-          Leading organizations have already implemented these solutions, achieving remarkable results in efficiency, productivity, and innovation. Their experiences provide valuable insights and best practices for others looking to follow suit.
-        </p>
-      </div>
-    </section>`;
+    Success Stories:
+
+    Leading organizations across industries have already embraced these innovative solutions, achieving remarkable results. From small startups to enterprise-level corporations, the impact is clear: increased efficiency, reduced operational costs, and improved team satisfaction. These success stories serve as powerful testimonials to the transformative potential of AI-driven tools.
+  `;
 }
 
 function createFutureOutlook(): string {
   return `
-    <section class="prose prose-lg max-w-none mb-8">
-      <h2 class="text-3xl font-bold text-[#1A1F2C] mb-6">Looking Ahead</h2>
-      <div class="space-y-4">
-        <p class="text-gray-700">
-          The future holds even more exciting possibilities as technology continues to evolve. Organizations that embrace these changes and adapt their strategies accordingly will be well-positioned for success in the years to come.
-        </p>
-      </div>
-    </section>`;
+    Looking Ahead:
+
+    The future of AI tools and productivity solutions looks incredibly promising. As technology continues to evolve, we can expect even more sophisticated features and capabilities. Organizations that embrace these innovations today will be well-positioned to thrive in tomorrow's competitive landscape. The key to success lies in staying informed, adaptable, and ready to leverage new opportunities as they emerge.
+  `;
 }
