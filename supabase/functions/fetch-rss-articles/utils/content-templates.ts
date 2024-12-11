@@ -64,7 +64,7 @@ export const generatePostStructure = (
       ` : ''}
 
       <div class="content-section space-y-8">
-        ${content}
+        ${formatContentSection(content)}
       </div>
 
       <footer class="mt-16 pt-8 border-t border-gray-200">
@@ -98,16 +98,16 @@ export const generatePostStructure = (
 export const formatContentSection = (content: string): string => {
   const sections = content.split('\n\n').filter(section => section.trim());
   
-  return sections.map(section => {
+  return sections.map((section, index) => {
     // Check if it's a heading
-    if (section.trim().length < 100 && section.trim().endsWith(':')) {
-      return `<h2 class="text-3xl font-bold text-[#1A1F2C] mt-12 mb-6">${section.trim().slice(0, -1)}</h2>`;
+    if (section.trim().length < 100 && (section.trim().endsWith(':') || section.includes('.'))) {
+      return `<h2 class="text-3xl font-bold text-[#1A1F2C] mt-12 mb-6">${section.trim().replace(':', '')}</h2>`;
     }
     
     // Regular paragraph with enhanced styling
     return `
       <div class="prose-section animate-fade-up">
-        <p class="text-gray-700 leading-relaxed mb-6">
+        <p class="text-gray-700 leading-relaxed mb-6 text-lg">
           ${section.trim()}
         </p>
       </div>
