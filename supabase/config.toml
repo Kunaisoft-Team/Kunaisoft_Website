@@ -22,3 +22,6 @@ enabled = true
 
 [auth]
 enabled = true
+
+[functions.fetch-rss-articles]
+verify_jwt = false
