@@ -1,131 +1,75 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { formatContent } from './content-formatter.ts';
+import { formatContentSection, generatePostStructure } from './content-templates.ts';
 import { extractKeyPoints, extractQuote, extractStatistics } from './content-extractors.ts';
 import { createSlug } from './content.ts';
-import { selectRandomPlaceholderImage, generateContentImages, enhanceContentWithImages } from './image-processor.ts';
+import { selectRandomPlaceholderImage, generateContentImages } from './image-processor.ts';
 
-export async function processAndStorePost(supabase: ReturnType<typeof createClient>, entry: any, botId: string, sourceUrl: string) {
+export async function processAndStorePost(
+  supabase: ReturnType<typeof createClient>,
+  entry: any,
+  botId: string,
+  sourceUrl: string
+) {
   try {
-    // Enhanced title extraction with SEO-friendly fallbacks
+    // Extract basic post information
     const title = entry?.title?._text || 
                  entry?.title || 
                  generateSEOTitle(entry?.description?._text, sourceUrl);
 
     console.log('Processing entry with title:', title);
 
-    // Extract and format content with better error handling
-    const content = entry?.content?._text || 
-                   entry?.description?._text || 
-                   generateDefaultContent(title, sourceUrl);
+    // Extract and process content
+    const rawContent = entry?.content?._text || 
+                      entry?.description?._text || 
+                      generateDefaultContent(title, sourceUrl);
 
-    // Generate hero image and content images
+    // Generate images
     const heroImage = entry?.image_url || selectRandomPlaceholderImage();
-    const contentImages = generateContentImages(title, content);
+    const contentImages = generateContentImages(title, rawContent);
     
-    const keyPoints = extractKeyPoints(content);
-    const quote = extractQuote(content);
-    const statistics = extractStatistics(content);
+    // Extract content components
+    const keyPoints = extractKeyPoints(rawContent);
+    const quote = extractQuote(rawContent);
+    const statistics = extractStatistics(rawContent);
     
-    // Format content with proper HTML structure and enhanced imagery
-    const formattedContent = `
-      <article class="prose prose-lg max-w-none">
-        <header class="mb-8 animate-fade-in">
-          <h1 class="text-4xl font-bold text-[#1A1F2C] mb-4 leading-tight">${title}</h1>
-          
-          <div class="relative h-[500px] mb-6 rounded-xl overflow-hidden shadow-lg">
-            <img 
-              src="${heroImage}" 
-              alt="${title}"
-              class="w-full h-full object-cover transition-transform hover:scale-105 duration-500"
-            />
-          </div>
-        </header>
-
-        ${keyPoints.length > 0 ? `
-          <section class="bg-gray-50 p-6 rounded-lg mb-8 animate-fade-up">
-            <h2 class="text-2xl font-semibold text-[#1A1F2C] mb-4">Key Takeaways</h2>
-            <ul class="space-y-3">
-              ${keyPoints.map(point => `
-                <li class="flex items-start group">
-                  <span class="text-[#9b87f5] mr-3 group-hover:scale-110 transition-transform">•</span>
-                  <span class="text-gray-700">${point}</span>
-                </li>
-              `).join('')}
-            </ul>
-          </section>
-        ` : ''}
-
-        ${quote ? `
-          <blockquote class="my-8 pl-6 border-l-4 border-[#9b87f5] italic text-gray-700 animate-fade-up">
-            <p class="text-xl leading-relaxed">"${quote}"</p>
-          </blockquote>
-        ` : ''}
-
-        ${statistics.length > 0 ? `
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-8 animate-fade-up">
-            ${statistics.map(stat => `
-              <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                <div class="text-2xl font-bold text-[#9b87f5]">${stat.value}</div>
-                <div class="text-gray-600">${stat.label}</div>
-              </div>
-            `).join('')}
-          </div>
-        ` : ''}
-
-        <div class="content-section space-y-6">
-          ${enhanceContentWithImages(formatContent(content), contentImages)}
-        </div>
-
-        <footer class="mt-12 pt-8 border-t border-gray-200">
-          <div class="flex justify-between items-center">
-            <div class="flex items-center space-x-4">
-              <img
-                src="${entry.profiles?.avatar_url || '/placeholder.svg'}"
-                alt="Author"
-                class="w-12 h-12 rounded-full object-cover border-2 border-[#9b87f5]"
-              />
-              <div>
-                <p class="font-semibold text-[#1A1F2C]">${entry.profiles?.full_name || 'Kunaisoft News'}</p>
-                <p class="text-sm text-gray-600">${new Date().toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}</p>
-              </div>
-            </div>
-            
-            <div class="flex space-x-4">
-              <button class="social-share-btn bg-[#1DA1F2] text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors">
-                Share on Twitter
-              </button>
-              <button class="social-share-btn bg-[#4267B2] text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors">
-                Share on Facebook
-              </button>
-            </div>
-          </div>
-        </footer>
-      </article>
-    `;
+    // Format content with our new template
+    const formattedContent = generatePostStructure(
+      title,
+      heroImage,
+      formatContentSection(rawContent),
+      keyPoints,
+      quote,
+      statistics,
+      {
+        name: 'Kunaisoft News',
+        avatarUrl: '/placeholder.svg',
+        date: new Date().toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })
+      }
+    );
 
     // Calculate reading time
-    const wordCount = content.split(/\s+/).length;
+    const wordCount = rawContent.split(/\s+/).length;
     const readingTimeMinutes = Math.ceil(wordCount / 200);
 
-    // Generate a SEO-friendly slug
+    // Generate slug
     const slug = createSlug(title);
     console.log('Generated slug:', slug);
 
-    // Prepare post data with enhanced metadata
+    // Prepare post data
     const postData = {
       title,
       content: formattedContent,
-      excerpt: generateExcerpt(entry?.description?._text || content),
+      excerpt: generateExcerpt(rawContent),
       author_id: botId,
       slug,
       image_url: heroImage,
       reading_time_minutes: readingTimeMinutes,
-      meta_description: generateMetaDescription(entry?.description?._text || content, title),
-      meta_keywords: extractKeywords(content)
+      meta_description: generateMetaDescription(rawContent, title),
+      meta_keywords: extractKeywords(rawContent)
     };
 
     // Store in database
@@ -158,17 +102,16 @@ function generateSEOTitle(description: string | null, sourceUrl: string): string
 
 function generateDefaultContent(title: string, sourceUrl: string): string {
   return `
-    <h2>Latest Industry Developments</h2>
-    <p>
-      In a rapidly evolving digital landscape, staying informed about the latest developments
-      is crucial for business success. This article explores key insights from ${new URL(sourceUrl).hostname}
-      regarding ${title.toLowerCase()}.
-    </p>
-    <h3>Key Industry Trends</h3>
-    <p>
-      Recent market analysis shows significant shifts in how businesses approach digital transformation.
-      Organizations are increasingly focusing on automation, efficiency, and scalable solutions.
-    </p>
+    Latest Industry Developments:
+    
+    In a rapidly evolving digital landscape, staying informed about the latest developments
+    is crucial for business success. This article explores key insights from ${new URL(sourceUrl).hostname}
+    regarding ${title.toLowerCase()}.
+    
+    Key Industry Trends:
+    
+    Recent market analysis shows significant shifts in how businesses approach digital transformation.
+    Organizations are increasingly focusing on automation, efficiency, and scalable solutions.
   `;
 }
 
