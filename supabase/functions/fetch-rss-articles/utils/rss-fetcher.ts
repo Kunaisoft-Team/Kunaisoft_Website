@@ -2,8 +2,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { parse as parseXML } from "https://deno.land/x/xml@2.1.1/mod.ts";
 import { RSSSource, RSSEntry } from './types.ts';
 import { storeArticleAsPost } from './storage.ts';
+import { RELIABLE_SOURCES } from './config.ts';
 
-export async function fetchRSSSources(supabase: ReturnType<typeof createClient>): Promise<RSSSource[]> {
+export async function fetchReliableSources(supabase: ReturnType<typeof createClient>): Promise<RSSSource[]> {
   if (!supabase) {
     console.error('Supabase client is null');
     return [];
@@ -14,6 +15,7 @@ export async function fetchRSSSources(supabase: ReturnType<typeof createClient>)
     .from('rss_sources')
     .select('*')
     .eq('active', true)
+    .filter('url', 'in', `(${RELIABLE_SOURCES.map(domain => `%.${domain}`).join(',')})`)
     .limit(5);
 
   if (sourcesError) {
