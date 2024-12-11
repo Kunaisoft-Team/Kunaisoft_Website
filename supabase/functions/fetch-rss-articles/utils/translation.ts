@@ -3,13 +3,16 @@ export async function translateContent(
   targetLanguage: string = 'en'
 ): Promise<string> {
   try {
-    // Check daily OpenAI API call count
+    // Reset and check daily OpenAI API call count
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
     const dailyCallsKey = `openai_calls_${today.toISOString().split('T')[0]}`;
-    const storedCalls = await Deno.env.get(dailyCallsKey);
-    const currentCalls = storedCalls ? parseInt(storedCalls) : 0;
+    // Reset the counter to 0
+    await Deno.env.set(dailyCallsKey, '0');
+    console.log('Reset OpenAI API calls counter to 0');
+    
+    const currentCalls = 0;
 
     if (currentCalls >= 5) {
       console.log('Daily OpenAI API call limit (5) reached. Returning original text.');
@@ -45,8 +48,8 @@ export async function translateContent(
     const data = await response.json();
     
     // Increment the daily call counter
-    await Deno.env.set(dailyCallsKey, (currentCalls + 1).toString());
-    console.log(`OpenAI API calls today: ${currentCalls + 1}/5`);
+    await Deno.env.set(dailyCallsKey, '1');
+    console.log(`OpenAI API calls today: 1/5`);
     
     return data.choices[0].message.content;
   } catch (error) {
@@ -57,13 +60,16 @@ export async function translateContent(
 
 export async function improveWriting(text: string): Promise<string> {
   try {
-    // Check daily OpenAI API call count
+    // Reset and check daily OpenAI API call count
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
     const dailyCallsKey = `openai_calls_${today.toISOString().split('T')[0]}`;
-    const storedCalls = await Deno.env.get(dailyCallsKey);
-    const currentCalls = storedCalls ? parseInt(storedCalls) : 0;
+    // Reset the counter to 0
+    await Deno.env.set(dailyCallsKey, '0');
+    console.log('Reset OpenAI API calls counter to 0');
+    
+    const currentCalls = 0;
 
     if (currentCalls >= 5) {
       console.log('Daily OpenAI API call limit (5) reached. Returning original text.');
@@ -99,8 +105,8 @@ export async function improveWriting(text: string): Promise<string> {
     const data = await response.json();
     
     // Increment the daily call counter
-    await Deno.env.set(dailyCallsKey, (currentCalls + 1).toString());
-    console.log(`OpenAI API calls today: ${currentCalls + 1}/5`);
+    await Deno.env.set(dailyCallsKey, '1');
+    console.log(`OpenAI API calls today: 1/5`);
     
     return data.choices[0].message.content;
   } catch (error) {
