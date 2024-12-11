@@ -53,7 +53,7 @@ export function BlogFilters({ onTagChange, onYearChange, onAuthorChange }: BlogF
           <SelectValue placeholder="Select Tag" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">All Tags</SelectItem>
+          <SelectItem value="all">All Tags</SelectItem>
           {tags.map((tag) => (
             <SelectItem key={tag.id} value={tag.id}>
               {tag.name}
@@ -67,7 +67,7 @@ export function BlogFilters({ onTagChange, onYearChange, onAuthorChange }: BlogF
           <SelectValue placeholder="Select Year" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">All Years</SelectItem>
+          <SelectItem value="all">All Years</SelectItem>
           {years.map((year) => (
             <SelectItem key={year} value={year.toString()}>
               {year}
@@ -81,7 +81,7 @@ export function BlogFilters({ onTagChange, onYearChange, onAuthorChange }: BlogF
           <SelectValue placeholder="Select Author" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">All Authors</SelectItem>
+          <SelectItem value="all">All Authors</SelectItem>
           {authors.map((author) => (
             <SelectItem key={author.id} value={author.id}>
               {author.full_name}
