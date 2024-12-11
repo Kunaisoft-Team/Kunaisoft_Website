@@ -84,6 +84,9 @@ serve(async (req) => {
     // Test post creation with mock data
     try {
       console.log('Creating test post with mock RSS data...');
+      const timestamp = new Date().getTime();
+      const uniqueSlug = `${mockRSSEntry.title._text.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${timestamp}`;
+      
       const { data: post, error: postError } = await supabaseClient
         .from('posts')
         .insert({
@@ -91,7 +94,7 @@ serve(async (req) => {
           content: mockRSSEntry.content._text,
           excerpt: mockRSSEntry.description._text.substring(0, 200),
           author_id: botId,
-          slug: mockRSSEntry.title._text.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          slug: uniqueSlug,
           meta_description: mockRSSEntry.description._text.substring(0, 160),
           reading_time_minutes: 5
         })
