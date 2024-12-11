@@ -1,4 +1,4 @@
-import { expandContent, extractContent } from './content-generator';
+import { expandContent, extractContent } from './content-generator.ts';
 
 export function createSlug(title: string): string {
   if (!title) {

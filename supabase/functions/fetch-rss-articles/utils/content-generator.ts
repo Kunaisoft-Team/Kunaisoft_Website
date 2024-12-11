@@ -1,6 +1,6 @@
-import { generateSEOContent } from './seo-utils';
-import { createStorytellingContent } from './storytelling-utils';
-import { formatSections } from './section-formatter';
+import { generateSEOContent } from './seo-utils.ts';
+import { createStorytellingContent } from './storytelling-utils.ts';
+import { formatSections } from './section-formatter.ts';
 
 export function expandContent(baseContent: string, title: string): string {
   // If content is already long enough, just format it
