@@ -1,21 +1,26 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
 export async function translateContent(
   text: string,
   targetLanguage: string = 'en'
 ): Promise<string> {
   try {
-    // Use DeepL-like translation approach
-    const response = await fetch('https://api-free.deepl.com/v2/translate', {
+    // Use OpenAI for translation
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `DeepL-Auth-Key ${Deno.env.get('DEEPL_API_KEY')}`,
+        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
       },
       body: JSON.stringify({
-        text: [text],
-        target_lang: targetLanguage,
-        preserve_formatting: true
+        model: 'gpt-4',
+        messages: [{
+          role: 'system',
+          content: `You are a professional translator. Translate the following text to ${targetLanguage}. Maintain any HTML formatting if present. Keep technical terms accurate.`
+        }, {
+          role: 'user',
+          content: text
+        }],
+        temperature: 0.3,
+        max_tokens: 1500
       })
     });
 
@@ -25,7 +30,7 @@ export async function translateContent(
     }
 
     const data = await response.json();
-    return data.translations[0].text;
+    return data.choices[0].message.content;
   } catch (error) {
     console.error('Translation error:', error);
     return text; // Return original text if translation fails
@@ -51,7 +56,7 @@ export async function improveWriting(text: string): Promise<string> {
           content: text
         }],
         temperature: 0.7,
-        max_tokens: 1000
+        max_tokens: 1500
       })
     });
 
