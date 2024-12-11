@@ -65,6 +65,7 @@ export async function fetchRSSFeed(url: string) {
     let parsedXML;
     try {
       parsedXML = parseXML(xml);
+      console.log('Parsed XML structure:', JSON.stringify(parsedXML, null, 2));
     } catch (parseError) {
       console.error('Failed to parse XML:', parseError);
       throw new Error('Failed to parse XML feed');
@@ -80,12 +81,28 @@ export async function fetchRSSFeed(url: string) {
       const items = Array.isArray(parsedXML.rss.channel.item) 
         ? parsedXML.rss.channel.item 
         : [parsedXML.rss.channel.item];
-      entries.push(...items.filter(item => item !== null));
+      console.log('RSS items found:', items.length);
+      entries.push(...items.filter(item => {
+        if (!item) {
+          console.log('Skipping null RSS item');
+          return false;
+        }
+        console.log('Processing RSS item:', JSON.stringify(item, null, 2));
+        return true;
+      }));
     } else if (parsedXML.feed?.entry) {
       const items = Array.isArray(parsedXML.feed.entry)
         ? parsedXML.feed.entry
         : [parsedXML.feed.entry];
-      entries.push(...items.filter(item => item !== null));
+      console.log('Atom entries found:', items.length);
+      entries.push(...items.filter(item => {
+        if (!item) {
+          console.log('Skipping null Atom entry');
+          return false;
+        }
+        console.log('Processing Atom entry:', JSON.stringify(item, null, 2));
+        return true;
+      }));
     }
 
     if (entries.length === 0) {

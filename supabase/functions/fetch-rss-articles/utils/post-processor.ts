@@ -9,37 +9,6 @@ async function checkDailyPostLimits(
   // Temporarily disable limits for testing
   console.log('Daily post limits temporarily disabled for testing');
   return true;
-
-  // Original limit logic commented out for testing
-  /*
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Check total posts for today
-  const { count: totalDailyPosts } = await supabase
-    .from('posts')
-    .select('*', { count: 'exact', head: true })
-    .gte('created_at', today.toISOString());
-
-  if (totalDailyPosts && totalDailyPosts >= 5) {
-    console.log('Daily post limit (5) reached');
-    return false;
-  }
-
-  // Check posts from this source today
-  const { count: sourceDailyPosts } = await supabase
-    .from('posts')
-    .select('*', { count: 'exact', head: true })
-    .eq('meta_keywords', [sourceUrl])
-    .gte('created_at', today.toISOString());
-
-  if (sourceDailyPosts && sourceDailyPosts >= 1) {
-    console.log(`Daily limit (1) reached for source: ${sourceUrl}`);
-    return false;
-  }
-
-  return true;
-  */
 }
 
 export async function processAndStorePost(
@@ -49,22 +18,49 @@ export async function processAndStorePost(
   sourceUrl?: string
 ) {
   try {
+    console.log('Processing entry:', entry);
+
     // Extract title with fallbacks
     const title = entry.title?._text || 
                  entry.title?.toString() || 
                  'Untitled Post';
 
-    // Extract content with fallbacks
+    // Extract content with enhanced fallbacks
     let content = entry['content:encoded']?._text ||
                  entry.content?._text ||
                  entry.description?._text ||
-                 entry.summary?._text ||
-                 'Not content available';
+                 entry.summary?._text;
+
+    // Additional content extraction attempts
+    if (!content) {
+      content = entry.content?.['#text'] ||  // Some feeds use this format
+               entry.description?.['#text'] ||
+               entry['content:encoded']?.['#text'] ||
+               entry.summary?.['#text'];
+      
+      if (!content && typeof entry.content === 'string') {
+        content = entry.content;
+      }
+      if (!content && typeof entry.description === 'string') {
+        content = entry.description;
+      }
+    }
+
+    // If still no content, check for nested structures
+    if (!content && entry.content && typeof entry.content === 'object') {
+      content = Object.values(entry.content).find(val => typeof val === 'string');
+    }
+
+    if (!content) {
+      console.log('No content found in entry:', entry);
+      content = 'Content not available';
+    }
 
     console.log(`Processing entry: "${title}" (content length: ${content.length})`);
+    console.log('Content preview:', content.substring(0, 200));
 
     // Basic validation
-    if (title === 'Untitled Post' && content === 'Not content available') {
+    if (title === 'Untitled Post' && (!content || content === 'Content not available')) {
       console.log('Skipping entry: Both title and content are missing');
       return null;
     }
