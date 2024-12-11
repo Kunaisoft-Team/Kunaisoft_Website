@@ -35,6 +35,17 @@ export async function getRSSBotProfile(supabase: any) {
       return newProfile.id;
     }
 
+    // If profile exists but might need the is_bot flag updated
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ is_bot: true })
+      .eq('id', RSS_BOT_ID);
+
+    if (updateError) {
+      console.error('Error updating RSS bot profile:', updateError);
+      throw updateError;
+    }
+
     console.log('Using existing RSS Bot profile:', profile);
     return profile.id;
   } catch (error) {
