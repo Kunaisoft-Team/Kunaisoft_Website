@@ -1,7 +1,7 @@
+import { useState } from "react";
 import { Navigation } from "@/components/Navigation";
 import { BlogList } from "@/components/BlogList";
 import { BlogFilters } from "@/components/BlogFilters";
-import { useState } from "react";
 
 const Blog = () => {
   const [currentPage, setCurrentPage] = useState(1);
