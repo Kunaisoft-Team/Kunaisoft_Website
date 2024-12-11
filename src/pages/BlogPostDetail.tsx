@@ -7,6 +7,7 @@ import { Share2, Twitter, Linkedin, Clock, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { KeyTakeaways } from "@/components/blog/KeyTakeaways";
 
 const BlogPostDetail = () => {
   const { slug } = useParams();
@@ -204,31 +205,7 @@ const BlogPostDetail = () => {
             />
 
             {/* Key Takeaways */}
-            <div className="mt-16 p-8 bg-[#F1F0FB] rounded-xl animate-fade-in">
-              <h2 className="text-2xl font-bold text-[#1A1F2C] mb-6">
-                Key Takeaways
-              </h2>
-              <ul className="space-y-4">
-                <li className="flex items-start gap-3">
-                  <span className="text-primary">•</span>
-                  <span className="text-gray-600">
-                    Understanding the core concepts and implementation details
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-primary">•</span>
-                  <span className="text-gray-600">
-                    Best practices for optimal performance and scalability
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-primary">•</span>
-                  <span className="text-gray-600">
-                    Real-world applications and practical examples
-                  </span>
-                </li>
-              </ul>
-            </div>
+            <KeyTakeaways />
 
             {/* Share Section */}
             <div className="mt-16 pt-8 border-t border-gray-100 animate-fade-in">
