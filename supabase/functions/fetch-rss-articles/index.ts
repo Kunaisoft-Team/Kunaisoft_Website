@@ -10,11 +10,17 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
-    );
+    // Initialize Supabase client with null checks
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing required environment variables');
+    }
+
+    const supabaseClient = createClient(supabaseUrl, supabaseKey, { 
+      auth: { persistSession: false } 
+    });
 
     console.log('Fetching existing RSS bot profile...');
     
@@ -28,18 +34,42 @@ serve(async (req) => {
         .eq('full_name', 'RSS Bot')
         .single();
 
-      if (error) throw error;
-      if (!data) throw new Error('RSS Bot profile not found');
+      if (error) {
+        console.error('Database error fetching bot profile:', error);
+        throw error;
+      }
+      
+      if (!data || !data.id) {
+        console.error('No valid bot profile found');
+        throw new Error('No valid bot profile found');
+      }
+      
       botProfile = data;
     } catch (error) {
-      console.error('Error fetching bot profile:', error);
+      console.error('Error in bot profile fetch:', error);
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch bot profile', details: error.message }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        JSON.stringify({ 
+          error: 'Failed to fetch bot profile', 
+          details: error.message 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 500 
+        }
       );
     }
 
     const botId = botProfile.id;
+    if (!botId) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid bot profile ID' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 500 
+        }
+      );
+    }
+
     console.log('Using Bot ID:', botId);
 
     let totalNewPosts = 0;
@@ -48,7 +78,11 @@ serve(async (req) => {
     try {
       const sources = await fetchRSSSources(supabaseClient);
       
-      if (!sources || sources.length === 0) {
+      if (!Array.isArray(sources)) {
+        throw new Error('Invalid response from fetchRSSSources');
+      }
+      
+      if (sources.length === 0) {
         return new Response(
           JSON.stringify({ message: 'No active RSS sources found' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
@@ -58,30 +92,37 @@ serve(async (req) => {
       for (const source of sources) {
         try {
           if (!source?.id || !source?.name || !source?.url) {
-            console.error('Invalid source data:', source);
-            errors.push(`Invalid source data: ${JSON.stringify(source)}`);
+            const errorMsg = `Invalid source data: ${JSON.stringify(source)}`;
+            console.error(errorMsg);
+            errors.push(errorMsg);
             continue;
           }
 
           console.log(`Processing source: ${source.name}`);
+          
           const newPosts = await fetchAndParseRSSFeed(supabaseClient, source, botId);
           
           if (typeof newPosts !== 'number') {
-            throw new Error('Invalid return value from fetchAndParseRSSFeed');
+            throw new Error(`Invalid return value from fetchAndParseRSSFeed for source ${source.name}`);
           }
           
           console.log(`Successfully processed ${newPosts} new posts from ${source.name}`);
           totalNewPosts += newPosts;
           
           if (newPosts > 0) {
-            await updateLastFetchTime(supabaseClient, source.id).catch(error => {
-              console.error(`Failed to update last fetch time for ${source.name}:`, error);
-              errors.push(`Failed to update last fetch time for ${source.name}: ${error.message}`);
-            });
+            try {
+              await updateLastFetchTime(supabaseClient, source.id);
+            } catch (updateError) {
+              const errorMsg = `Failed to update last fetch time for ${source.name}: ${updateError.message}`;
+              console.error(errorMsg);
+              errors.push(errorMsg);
+            }
           }
         } catch (sourceError) {
-          console.error(`Error processing source ${source?.name || 'unknown'}:`, sourceError);
-          errors.push(`${source?.name || 'unknown'}: ${sourceError.message}`);
+          const errorMsg = `${source?.name || 'unknown'}: ${sourceError.message}`;
+          console.error(`Error processing source:`, errorMsg);
+          errors.push(errorMsg);
+          continue;
         }
       }
 
