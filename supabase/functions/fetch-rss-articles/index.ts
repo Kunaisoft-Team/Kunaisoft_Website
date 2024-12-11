@@ -32,40 +32,19 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Create bot profile if it doesn't exist
-    const { data: existingBot, error: botError } = await supabaseClient
+    // Get Kunaisoft News profile
+    const { data: kunaisoftProfile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('id')
-      .eq('full_name', 'ML Mastery Bot')
-      .eq('is_bot', true)
+      .eq('full_name', 'Kunaisoft News')
       .single()
 
-    if (botError && botError.code === 'PGRST116') {
-      console.log('Bot profile not found, creating new one...')
-      const { data: newBot, error: createBotError } = await supabaseClient
-        .from('profiles')
-        .insert({
-          full_name: 'ML Mastery Bot',
-          is_bot: true,
-        })
-        .select()
-        .single()
-
-      if (createBotError) {
-        throw new Error(`Failed to create bot profile: ${createBotError.message}`)
-      }
-      
-      console.log('Successfully created bot profile:', newBot)
-      var botId = newBot.id
-    } else if (botError) {
-      throw new Error(`Error fetching bot profile: ${botError.message}`)
-    } else {
-      console.log('Found existing bot profile:', existingBot)
-      var botId = existingBot.id
+    if (profileError) {
+      throw new Error(`Error fetching Kunaisoft News profile: ${profileError.message}`)
     }
 
-    if (!botId) {
-      throw new Error('Failed to get or create bot profile')
+    if (!kunaisoftProfile?.id) {
+      throw new Error('Kunaisoft News profile not found')
     }
 
     // Get default tag for RSS posts
@@ -113,7 +92,7 @@ Deno.serve(async (req) => {
             .single()
 
           if (!existingPost) {
-            console.log('Creating new post:', title, 'with author_id:', botId)
+            console.log('Creating new post:', title, 'with author_id:', kunaisoftProfile.id)
             
             // Insert new post with all required fields
             const { data: newPost, error: postError } = await supabaseClient
@@ -122,7 +101,7 @@ Deno.serve(async (req) => {
                 title,
                 content,
                 excerpt,
-                author_id: botId,
+                author_id: kunaisoftProfile.id,
                 slug: link,
                 reading_time_minutes: Math.ceil(content.split(' ').length / 200), // Estimate reading time
                 meta_description: excerpt,
