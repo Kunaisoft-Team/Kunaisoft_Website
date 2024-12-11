@@ -38,28 +38,46 @@ serve(async (req) => {
     console.log('Using Bot ID:', botId);
 
     const sources = await fetchReliableSources(supabaseClient);
+    console.log(`Processing ${sources.length} reliable sources`);
+    
     const results = [];
     const errors = [];
 
     for (const source of sources) {
       try {
-        console.log(`Processing source: ${source.name}`);
+        if (!source?.url) {
+          console.error(`Invalid source configuration:`, source);
+          continue;
+        }
+
+        console.log(`Processing source: ${source.name} (${source.url})`);
+        const { entries, error } = await fetchRSSFeed(source.url);
         
-        const feed = await fetchRSSFeed(source.url);
-        
-        const entries = Array.isArray(feed?.rss?.channel?.item) 
-          ? feed.rss?.channel?.item 
-          : Array.isArray(feed?.feed?.entry) 
-            ? feed.feed?.entry 
-            : [];
-        
-        console.log(`Found ${entries.length} entries in ${source.name}`);
+        if (error) {
+          console.error(`Error fetching feed from ${source.name}:`, error);
+          errors.push(`Failed to fetch from ${source.name}: ${error.message}`);
+          continue;
+        }
+
+        if (!entries || entries.length === 0) {
+          console.log(`No valid entries found for ${source.name}`);
+          continue;
+        }
+
+        console.log(`Processing ${entries.length} entries from ${source.name}`);
 
         for (const entry of entries) {
           try {
+            if (!entry) {
+              console.log(`Skipping null entry from ${source.name}`);
+              continue;
+            }
+
             const post = await processAndStorePost(supabaseClient, entry, botId);
-            results.push(post);
-            console.log(`Created post: ${post.title}`);
+            if (post) {
+              results.push(post);
+              console.log(`Created post: ${post.title}`);
+            }
           } catch (entryError) {
             console.error(`Error processing entry from ${source.name}:`, entryError);
             errors.push(`Error processing entry from ${source.name}: ${entryError?.message || 'Unknown error'}`);
@@ -67,6 +85,7 @@ serve(async (req) => {
           }
         }
 
+        // Update last fetch timestamp
         await supabaseClient
           .from('rss_sources')
           .update({ last_fetch_at: new Date().toISOString() })
