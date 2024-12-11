@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('Starting RSS feed processing endpoint')
+    console.log('Starting RSS feed processing')
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -41,16 +41,17 @@ Deno.serve(async (req) => {
       throw new Error('Failed to fetch RSS sources')
     }
 
-    console.log(`Found ${sources?.length || 0} active RSS sources`)
+    console.log(`Processing ${sources?.length || 0} RSS sources`)
     
     // Process each source
     const results = []
     for (const source of sources || []) {
       try {
-        console.log(`Processing source: ${source.name} (${source.url})`)
+        console.log(`Fetching RSS feed: ${source.name} (${source.url})`)
         
         const response = await fetch(source.url)
         if (!response.ok) {
+          console.error(`HTTP error fetching ${source.name}: ${response.status}`)
           results.push({ 
             source: source.name, 
             status: 'error', 
@@ -63,6 +64,7 @@ Deno.serve(async (req) => {
         const parser = new Parser()
         const feed = await parser.parse(xml)
         
+        console.log(`Successfully parsed feed: ${source.name}`)
         results.push({ 
           source: source.name, 
           status: 'success',
@@ -70,10 +72,14 @@ Deno.serve(async (req) => {
         })
 
         // Update last fetch time
-        await supabase
+        const { error: updateError } = await supabase
           .from('rss_sources')
           .update({ last_fetch_at: new Date().toISOString() })
           .eq('id', source.id)
+
+        if (updateError) {
+          console.error(`Error updating last_fetch_at for ${source.name}:`, updateError)
+        }
 
       } catch (error) {
         console.error(`Error processing source ${source.name}:`, error)
@@ -87,7 +93,7 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
-        message: 'RSS feeds processed successfully', 
+        message: 'RSS feeds processed', 
         results 
       }),
       {
@@ -99,7 +105,7 @@ Deno.serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Error processing RSS feeds:', error)
+    console.error('Error in RSS feed processing:', error)
     return new Response(
       JSON.stringify({ 
         error: 'Failed to process RSS feeds', 

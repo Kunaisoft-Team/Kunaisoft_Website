@@ -9,6 +9,7 @@ export function RSSFeedTester() {
   const testFetch = async () => {
     setIsLoading(true);
     try {
+      console.log('Initiating RSS feed fetch...');
       const { data, error } = await supabase.functions.invoke('fetch-rss-articles', {
         method: 'POST'
       });
