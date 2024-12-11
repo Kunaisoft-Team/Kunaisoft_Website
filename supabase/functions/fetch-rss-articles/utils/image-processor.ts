@@ -57,7 +57,7 @@ export function selectRandomPlaceholderImage(category?: string): string {
 }
 
 export function generateContentImages(title: string, content: string, category?: string): string[] {
-  const numImages = Math.floor(Math.random() * 3) + 3; // 3-5 images
+  const numImages = Math.min(Math.floor(content.length / 500) + 1, 5); // 1 image per ~500 chars, max 5
   const images: string[] = [];
   
   for (let i = 0; i < numImages; i++) {
@@ -65,4 +65,8 @@ export function generateContentImages(title: string, content: string, category?:
   }
   
   return images;
+}
+
+export function generateHeroImage(category?: string): string {
+  return selectRandomPlaceholderImage(category);
 }
