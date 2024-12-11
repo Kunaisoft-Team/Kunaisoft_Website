@@ -59,6 +59,8 @@ serve(async (req) => {
     console.log(`Found ${sources?.length || 0} active RSS sources`);
 
     const results = [];
+    const errors = [];
+
     for (const source of sources || []) {
       try {
         // Check if the source URL contains any excluded domains
@@ -73,25 +75,42 @@ serve(async (req) => {
         const response = await fetch(source.url);
         if (!response.ok) {
           console.error(`Failed to fetch ${source.name}: ${response.status}`);
+          errors.push(`Failed to fetch ${source.name}: ${response.status}`);
           continue;
         }
 
         const xml = await response.text();
         const feed = parseXML(xml);
-        const entries = feed.rss?.channel?.item || feed.feed?.entry || [];
+        
+        // Safely access entries with null checks
+        const entries = Array.isArray(feed?.rss?.channel?.item) 
+          ? feed.rss?.channel?.item 
+          : Array.isArray(feed?.feed?.entry) 
+            ? feed.feed?.entry 
+            : [];
         
         console.log(`Found ${entries.length} entries in ${source.name}`);
 
         for (const entry of entries) {
           try {
-            const title = entry.title?._text;
-            if (!title) continue;
+            // Validate required fields
+            const title = entry?.title?._text;
+            if (!title?.trim()) {
+              console.log(`Skipping entry without valid title in ${source.name}`);
+              continue;
+            }
 
-            const content = entry.content?._text || 
-                          entry['content:encoded']?._text || 
-                          entry.description?._text || 
+            // Safely extract content with fallbacks
+            const content = entry?.content?._text || 
+                          entry?.['content:encoded']?._text || 
+                          entry?.description?._text || 
                           '';
             
+            if (!content?.trim()) {
+              console.log(`Skipping entry without content in ${source.name}`);
+              continue;
+            }
+
             const timestamp = new Date().getTime();
             const slug = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${timestamp}`;
 
@@ -104,13 +123,14 @@ serve(async (req) => {
                 author_id: botId,
                 slug,
                 meta_description: content.substring(0, 160),
-                reading_time_minutes: Math.ceil(content.split(' ').length / 200)
+                reading_time_minutes: Math.ceil((content?.split(' ')?.length || 0) / 200) || 5
               })
               .select()
               .single();
 
             if (postError) {
               console.error(`Error creating post from ${source.name}:`, postError);
+              errors.push(`Failed to create post "${title}" from ${source.name}`);
               continue;
             }
 
@@ -118,11 +138,12 @@ serve(async (req) => {
             console.log(`Created post: ${title}`);
           } catch (entryError) {
             console.error(`Error processing entry from ${source.name}:`, entryError);
+            errors.push(`Error processing entry from ${source.name}: ${entryError?.message || 'Unknown error'}`);
             continue;
           }
         }
 
-        // Update last fetch time
+        // Update last fetch time regardless of individual entry failures
         await supabaseClient
           .from('rss_sources')
           .update({ last_fetch_at: new Date().toISOString() })
@@ -130,6 +151,7 @@ serve(async (req) => {
 
       } catch (sourceError) {
         console.error(`Error processing source ${source.name}:`, sourceError);
+        errors.push(`Failed to process source ${source.name}: ${sourceError?.message || 'Unknown error'}`);
         continue;
       }
     }
@@ -137,18 +159,22 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         message: `Successfully processed ${results.length} posts`,
-        posts: results 
+        posts: results,
+        errors: errors.length > 0 ? errors : undefined
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-        status: 200 
+        status: errors.length > 0 ? 207 : 200 // Use 207 Multi-Status when there are partial failures
       }
     );
 
   } catch (error) {
     console.error('Error in main function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error?.message || 'Unknown error occurred',
+        stack: error?.stack
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
