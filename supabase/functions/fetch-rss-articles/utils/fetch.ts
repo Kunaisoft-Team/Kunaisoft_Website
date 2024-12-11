@@ -22,7 +22,7 @@ export async function fetchRSSSources(supabase: ReturnType<typeof createClient>)
 export async function updateLastFetchTime(
   supabase: ReturnType<typeof createClient>, 
   sourceId: string
-) {
+): Promise<void> {
   console.log('Updating last fetch time for source:', sourceId);
   const { error: updateError } = await supabase
     .from('rss_sources')
@@ -59,6 +59,10 @@ export async function fetchAndParseRSSFeed(
     console.log(`Received XML response of length: ${xml.length}`);
     
     const parsedXML = parseXML(xml);
+    if (!parsedXML) {
+      throw new Error('Failed to parse XML');
+    }
+
     const entries = (parsedXML.rss?.channel?.item || parsedXML.feed?.entry || []) as RSSEntry[];
     console.log(`Found ${entries.length} entries in feed`);
     
@@ -77,6 +81,6 @@ export async function fetchAndParseRSSFeed(
     return storedCount;
   } catch (error) {
     console.error(`Error processing feed ${source.name}:`, error);
-    return 0;
+    throw error;
   }
 }

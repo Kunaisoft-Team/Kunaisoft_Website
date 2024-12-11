@@ -1,61 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { RSSEntry } from './types.ts';
-
-function createSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-}
-
-function extractContent(entry: RSSEntry): string {
-  const content = entry.content?._text || 
-         entry.description?._text || 
-         entry['content:encoded']?._text || 
-         entry.summary?._text || 
-         '';
-  
-  return content ? content.replace(/<\/?[^>]+(>|$)/g, "") : '';
-}
-
-function extractImageUrl(content: string): string | null {
-  const imgMatch = content.match(/<img[^>]+src="([^">]+)"/);
-  return imgMatch ? imgMatch[1] : null;
-}
-
-async function createTag(supabase: ReturnType<typeof createClient>, category: string) {
-  if (!category) {
-    console.error('Category is required for creating a tag');
-    throw new Error('Category is required');
-  }
-
-  console.log('Creating or finding tag for category:', category);
-  
-  const { data: existingTag } = await supabase
-    .from('tags')
-    .select('id')
-    .eq('name', category)
-    .single();
-
-  if (existingTag) {
-    console.log('Found existing tag:', existingTag.id);
-    return existingTag.id;
-  }
-
-  const { data: newTag, error: tagError } = await supabase
-    .from('tags')
-    .insert({ name: category })
-    .select()
-    .single();
-
-  if (tagError) {
-    console.error('Error creating tag:', tagError);
-    throw tagError;
-  }
-
-  console.log('Created new tag:', newTag.id);
-  return newTag.id;
-}
+import { createSlug, extractContent, extractImageUrl } from './content.ts';
 
 export async function storeArticleAsPost(
   supabase: ReturnType<typeof createClient>,
@@ -79,22 +24,24 @@ export async function storeArticleAsPost(
     
     const content = extractContent(entry);
     const slug = createSlug(title);
-    const imageUrl = extractImageUrl(content);
+    const imageUrl = extractImageUrl(entry, content);
 
     // Check if post already exists
-    const { data: existingPost } = await supabase
+    const { data: existingPost, error: checkError } = await supabase
       .from('posts')
       .select('id')
       .eq('slug', slug)
       .single();
 
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking existing post:', checkError);
+      return false;
+    }
+
     if (existingPost) {
       console.log(`Post with slug ${slug} already exists, skipping`);
       return false;
     }
-
-    // Get or create tag for the category
-    const tagId = await createTag(supabase, category);
 
     // Insert new post
     const { data: post, error: postError } = await supabase
@@ -121,6 +68,34 @@ export async function storeArticleAsPost(
     if (!post || !post.id) {
       console.error('Post was created but no ID was returned');
       return false;
+    }
+
+    // Get or create tag for the category
+    const { data: existingTag, error: tagError } = await supabase
+      .from('tags')
+      .select('id')
+      .eq('name', category)
+      .single();
+
+    let tagId: string;
+    if (tagError && tagError.code === 'PGRST116') {
+      // Tag doesn't exist, create it
+      const { data: newTag, error: createTagError } = await supabase
+        .from('tags')
+        .insert({ name: category })
+        .select()
+        .single();
+
+      if (createTagError) {
+        console.error('Error creating tag:', createTagError);
+        throw createTagError;
+      }
+      tagId = newTag.id;
+    } else if (tagError) {
+      console.error('Error checking existing tag:', tagError);
+      throw tagError;
+    } else {
+      tagId = existingTag.id;
     }
 
     // Create posts_tags relationship
