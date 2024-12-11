@@ -1,30 +1,31 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { formatContent } from './content-formatter.ts';
 import { extractKeyPoints, extractQuote, extractStatistics } from './content-extractors.ts';
 import { createSlug } from './content.ts';
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-export async function processAndStorePost(post: any, authorId: string) {
+export async function processAndStorePost(supabase: ReturnType<typeof createClient>, entry: any, botId: string, sourceUrl: string) {
   try {
-    console.log('Processing post:', post.title);
+    if (!entry?.title?._text) {
+      console.log('Skipping entry without title');
+      return null;
+    }
+
+    console.log('Processing post:', entry.title._text);
 
     // Extract and format content
-    let content = post.content || post.description || "Not content available";
+    const content = entry.content?._text || entry.description?._text || "No content available";
     const keyPoints = extractKeyPoints(content);
     const quote = extractQuote(content);
     const statistics = extractStatistics(content);
     
     // Format content with proper HTML structure
-    let formattedContent = `
+    const formattedContent = `
       <article class="prose prose-lg max-w-none">
         <header class="mb-8">
-          <h1 class="text-4xl font-bold text-[#1A1F2C] mb-4">${post.title}</h1>
-          ${post.image_url ? `
+          <h1 class="text-4xl font-bold text-[#1A1F2C] mb-4">${entry.title._text}</h1>
+          ${entry.image_url ? `
             <div class="relative h-[400px] mb-6">
-              <img src="${post.image_url}" alt="${post.title}" class="w-full h-full object-cover rounded-lg" />
+              <img src="${entry.image_url}" alt="${entry.title._text}" class="w-full h-full object-cover rounded-lg" />
             </div>
           ` : ''}
         </header>
@@ -66,7 +67,6 @@ export async function processAndStorePost(post: any, authorId: string) {
     const wordCount = content.split(/\s+/).length;
     if (wordCount < 1000) {
       console.log(`Content length (${wordCount} words) is less than 1000 words. Expanding content...`);
-      // Add relevant industry context and examples
       formattedContent += `
         <section class="mt-8">
           <h2 class="text-2xl font-semibold text-[#1A1F2C] mb-4">Industry Impact</h2>
@@ -95,14 +95,14 @@ export async function processAndStorePost(post: any, authorId: string) {
 
     // Prepare post data
     const postData = {
-      title: post.title,
+      title: entry.title._text,
       content: formattedContent,
-      excerpt: post.description?.substring(0, 300) || null,
-      author_id: authorId,
-      slug: createSlug(post.title),
-      image_url: post.image_url,
+      excerpt: entry.description?._text?.substring(0, 300) || null,
+      author_id: botId,
+      slug: createSlug(entry.title._text),
+      image_url: entry.image_url,
       reading_time_minutes: readingTimeMinutes,
-      meta_description: post.description?.substring(0, 160) || null,
+      meta_description: entry.description?._text?.substring(0, 160) || null,
       meta_keywords: extractKeywords(content)
     };
 
