@@ -6,6 +6,12 @@ async function checkDailyPostLimits(
   supabase: ReturnType<typeof createClient>,
   sourceUrl: string
 ): Promise<boolean> {
+  // Temporarily disable limits for testing
+  console.log('Daily post limits temporarily disabled for testing');
+  return true;
+
+  // Original limit logic commented out for testing
+  /*
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -33,6 +39,7 @@ async function checkDailyPostLimits(
   }
 
   return true;
+  */
 }
 
 export async function processAndStorePost(
