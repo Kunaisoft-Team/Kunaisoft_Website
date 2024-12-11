@@ -1,11 +1,10 @@
 // @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { parse as parseRSS } from "https://deno.land/x/rss/mod.ts";
+import { parseFeed } from "https://deno.land/x/feed@1.1.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 Deno.serve(async (req) => {
@@ -71,7 +70,7 @@ Deno.serve(async (req) => {
         }
         
         const xml = await response.text()
-        const feed = await parseRSS(xml)
+        const feed = await parseFeed(xml)
         
         console.log(`Successfully parsed feed: ${source.name}`)
         results.push({ 
