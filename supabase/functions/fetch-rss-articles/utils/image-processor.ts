@@ -1,4 +1,4 @@
-import { unsplashImages } from './image-sources';
+import { unsplashImages } from './image-sources.ts';
 
 let lastUsedImageIndices: number[] = [];
 

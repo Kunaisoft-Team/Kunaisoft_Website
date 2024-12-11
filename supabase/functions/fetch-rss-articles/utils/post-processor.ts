@@ -1,24 +1,16 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { formatContentSection, generatePostStructure } from './content-templates.ts';
-import { extractKeyPoints, extractQuote, extractStatistics } from './content-extractors.ts';
-import { createSlug } from './content.ts';
-import { selectRandomPlaceholderImage, generateContentImages } from './image-processor.ts';
-import { improveWriting } from './translation.ts';
-import { expandContent, extractContent } from './content-generator.ts';
-
-let lastUsedImageIndices: number[] = [];
+import { selectRandomPlaceholderImage } from './image-processor.ts';
 
 export async function processAndStorePost(
   supabase: ReturnType<typeof createClient>,
   entry: any,
   botId: string,
-  sourceUrl: string,
-  category?: string
+  sourceUrl: string
 ) {
   try {
     const title = entry?.title?._text || 
                  entry?.title || 
-                 `Latest ${category ? category.replace(/_/g, ' ') : 'Technology'} Insights`;
+                 'Latest Technology Insights';
 
     console.log('Processing entry with title:', title);
 
@@ -26,33 +18,28 @@ export async function processAndStorePost(
                       entry?.description?._text || 
                       '';
 
-    // Generate expanded content using the category
-    const expandedContent = expandContent(rawContent, title, category);
-    
-    // Enhance content
-    const enhancedContent = await improveWriting(expandedContent);
-    const excerpt = enhancedContent.substring(0, 300) + '...';
+    const excerpt = rawContent.substring(0, 300) + '...';
+    const heroImage = selectRandomPlaceholderImage();
 
-    // Generate a unique image for the post
-    const heroImage = selectRandomPlaceholderImage(category);
-
-    // Generate slug
-    const slug = createSlug(title);
-    console.log('Generated slug:', slug);
+    // Generate slug from title
+    const slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
 
     // Store the post
     const { data: post, error } = await supabase
       .from('posts')
       .insert({
         title,
-        content: enhancedContent,
+        content: rawContent,
         slug,
         image_url: heroImage,
         author_id: botId,
         excerpt,
-        meta_description: enhancedContent.substring(0, 160),
-        meta_keywords: category ? [category] : ['technology'],
-        reading_time_minutes: Math.ceil(enhancedContent.split(/\s+/).length / 200)
+        meta_description: rawContent.substring(0, 160),
+        meta_keywords: ['technology'],
+        reading_time_minutes: Math.ceil(rawContent.split(/\s+/).length / 200)
       })
       .select()
       .single();
