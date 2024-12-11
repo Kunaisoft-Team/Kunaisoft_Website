@@ -58,9 +58,12 @@ Deno.serve(async (req) => {
     if (sources && sources.length > 0) {
       for (const source of sources) {
         try {
+          console.log(`Processing source: ${source.name}`);
           const newPosts = await fetchAndParseRSSFeed(supabase, source, botId);
+          console.log(`Successfully processed ${newPosts} new posts from ${source.name}`);
           totalNewPosts += newPosts;
           
+          // Only update last fetch time if we successfully processed posts
           if (newPosts > 0) {
             await updateLastFetchTime(supabase, source.id);
           }
@@ -74,8 +77,21 @@ Deno.serve(async (req) => {
       console.log('No active RSS sources found');
     }
 
-    // Handle response based on results
-    if (errors.length > 0 && totalNewPosts > 0) {
+    // Return appropriate response based on results
+    if (errors.length > 0 && totalNewPosts === 0) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to process RSS feeds', 
+          errors 
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500
+        }
+      );
+    }
+
+    if (errors.length > 0) {
       return new Response(
         JSON.stringify({ 
           message: 'RSS feeds partially processed', 
@@ -86,19 +102,6 @@ Deno.serve(async (req) => {
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 207
-        }
-      );
-    }
-
-    if (errors.length > 0 && totalNewPosts === 0) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Failed to process RSS feeds', 
-          errors
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500
         }
       );
     }
@@ -114,6 +117,7 @@ Deno.serve(async (req) => {
         status: 200
       }
     );
+
   } catch (error) {
     console.error('Error in RSS feed processing:', error);
     return new Response(

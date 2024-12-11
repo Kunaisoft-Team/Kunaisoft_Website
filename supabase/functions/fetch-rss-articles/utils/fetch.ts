@@ -15,7 +15,12 @@ export async function fetchRSSSources(supabase: ReturnType<typeof createClient>)
     throw new Error('Failed to fetch RSS sources');
   }
 
-  console.log(`Found ${sources?.length || 0} active RSS sources`);
+  if (!sources || sources.length === 0) {
+    console.log('No active RSS sources found');
+    return [];
+  }
+
+  console.log(`Found ${sources.length} active RSS sources`);
   return sources as RSSSource[];
 }
 
@@ -64,6 +69,11 @@ export async function fetchAndParseRSSFeed(
     }
 
     const entries = (parsedXML.rss?.channel?.item || parsedXML.feed?.entry || []) as RSSEntry[];
+    if (!entries || entries.length === 0) {
+      console.log('No entries found in feed');
+      return 0;
+    }
+
     console.log(`Found ${entries.length} entries in feed`);
     
     let storedCount = 0;
