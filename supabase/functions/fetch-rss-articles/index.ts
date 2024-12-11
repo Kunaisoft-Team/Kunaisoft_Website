@@ -6,6 +6,38 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Placeholder images for posts without images
+const PLACEHOLDER_IMAGES = [
+  'https://images.unsplash.com/photo-1649972904349-6e44c42644a7',
+  'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b',
+  'https://images.unsplash.com/photo-1518770660439-4636190af475',
+  'https://images.unsplash.com/photo-1461749280684-dccba630e2f6',
+  'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d'
+];
+
+// Get a random placeholder image
+function getRandomPlaceholder() {
+  const index = Math.floor(Math.random() * PLACEHOLDER_IMAGES.length);
+  return `${PLACEHOLDER_IMAGES[index]}?auto=format&fit=crop&w=1200&q=80`;
+}
+
+// Validate and format URL
+function formatUrl(url: string): string {
+  try {
+    return new URL(url).toString();
+  } catch {
+    return '';
+  }
+}
+
+// Generate a URL-friendly slug
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
 // Handle CORS preflight requests
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -15,17 +47,6 @@ Deno.serve(async (req) => {
   try {
     console.log('Starting RSS fetch from Machine Learning Mastery...')
     
-    // Fetch RSS feed
-    const response = await fetch('https://machinelearningmastery.com/feed/')
-    if (!response.ok) {
-      throw new Error(`Failed to fetch RSS feed: ${response.statusText}`)
-    }
-
-    const xml = await response.text()
-    const feed = await parseFeed(xml)
-    
-    console.log(`Fetched ${feed.entries?.length || 0} articles from RSS feed`)
-
     // Create Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -68,14 +89,27 @@ Deno.serve(async (req) => {
       tagId = aiToolsTag.id
     }
 
-    // Process each article
+    // Fetch RSS feed
+    const response = await fetch('https://machinelearningmastery.com/feed/')
+    if (!response.ok) {
+      throw new Error(`Failed to fetch RSS feed: ${response.statusText}`)
+    }
+
+    const xml = await response.text()
+    const feed = await parseFeed(xml)
+    
+    console.log(`Fetched ${feed.entries?.length || 0} articles from RSS feed`)
+
     let processedCount = 0
     if (feed.entries) {
       for (const entry of feed.entries) {
         const title = entry.title?.value || entry.title
         const content = entry.content?.value || entry.description?.value || entry.description || ''
         const excerpt = content.substring(0, 297) + '...' // Ensure we don't exceed text field limits
-        const link = entry.links?.[0]?.href || entry.link
+        const originalLink = entry.links?.[0]?.href || entry.link || ''
+        
+        // Generate a proper slug for internal routing
+        const slug = generateSlug(title);
         
         // Skip if any required field is missing
         if (!title || !content) {
@@ -88,11 +122,14 @@ Deno.serve(async (req) => {
           const { data: existingPost } = await supabaseClient
             .from('posts')
             .select('id')
-            .eq('title', title)
+            .eq('slug', slug)
             .single()
 
           if (!existingPost) {
             console.log('Creating new post:', title, 'with author_id:', kunaisoftProfile.id)
+            
+            // Get a random placeholder image
+            const imageUrl = getRandomPlaceholder();
             
             // Insert new post with all required fields
             const { data: newPost, error: postError } = await supabaseClient
@@ -102,7 +139,8 @@ Deno.serve(async (req) => {
                 content,
                 excerpt,
                 author_id: kunaisoftProfile.id,
-                slug: link,
+                slug,
+                image_url: imageUrl,
                 reading_time_minutes: Math.ceil(content.split(' ').length / 200), // Estimate reading time
                 meta_description: excerpt,
                 meta_keywords: ['ai', 'machine learning', 'tutorial']
@@ -116,7 +154,7 @@ Deno.serve(async (req) => {
             }
 
             // Add tag to post
-            if (newPost) {
+            if (newPost && tagId) {
               const { error: tagError } = await supabaseClient
                 .from('posts_tags')
                 .insert({
