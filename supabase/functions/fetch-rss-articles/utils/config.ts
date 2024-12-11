@@ -1,5 +1,7 @@
 export const RELIABLE_SOURCES = [
-  'rss.app',
-  'dev.to',
-  'hashnode.com'
+  'rss.elpais.com',
+  'elmundo.es/rss',
+  'abc.es/rss',
+  'lavanguardia.com/rss',
+  'elespanol.com/rss'
 ];
