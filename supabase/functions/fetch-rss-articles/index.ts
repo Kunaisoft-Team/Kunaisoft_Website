@@ -3,9 +3,13 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { parse as parseXML } from "https://deno.land/x/xml@2.1.1/mod.ts";
 import { corsHeaders } from './utils/cors.ts';
 
-// List of excluded RSS sources that are known to cause issues
-const EXCLUDED_SOURCES = [
-  // Lifehacker has been re-enabled since we improved error handling
+// List of reliable RSS sources (these are examples, adjust based on actual reliable sources)
+const RELIABLE_SOURCES = [
+  'feeds.feedburner.com',
+  'rss.app',
+  'medium.com',
+  'dev.to',
+  'hashnode.com'
 ];
 
 serve(async (req) => {
@@ -43,35 +47,42 @@ serve(async (req) => {
     const botId = botProfile.id;
     console.log('Using Bot ID:', botId);
 
-    // Fetch active RSS sources
-    console.log('Fetching RSS sources...');
+    // Fetch active RSS sources that are in our reliable sources list
+    console.log('Fetching reliable RSS sources...');
     const { data: sources, error: sourcesError } = await supabaseClient
       .from('rss_sources')
       .select('*')
-      .eq('active', true);
+      .eq('active', true)
+      .filter('url', 'in', `(${RELIABLE_SOURCES.map(s => `'%${s}%'`).join(',')})`)
+      .limit(5);
 
     if (sourcesError) {
       console.error('Error fetching RSS sources:', sourcesError);
       throw sourcesError;
     }
 
-    console.log(`Found ${sources?.length || 0} active RSS sources`);
+    console.log(`Found ${sources?.length || 0} reliable RSS sources`);
 
     const results = [];
     const errors = [];
 
     for (const source of sources || []) {
       try {
-        // Check if the source URL contains any excluded domains
-        if (EXCLUDED_SOURCES.some(excluded => source.url.includes(excluded))) {
-          console.log(`Skipping excluded source: ${source.name} (${source.url})`);
-          continue;
-        }
-
         console.log(`Processing source: ${source.name}`);
         
-        // Fetch RSS feed
-        const response = await fetch(source.url);
+        // Fetch RSS feed with timeout
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        const response = await fetch(source.url, { 
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/rss+xml, application/xml, text/xml, application/atom+xml',
+            'User-Agent': 'RSS Reader Bot/1.0'
+          }
+        });
+        clearTimeout(timeout);
+
         if (!response.ok) {
           console.error(`Failed to fetch ${source.name}: ${response.status}`);
           errors.push(`Failed to fetch ${source.name}: ${response.status}`);
@@ -79,7 +90,18 @@ serve(async (req) => {
         }
 
         const xml = await response.text();
+        if (!xml.trim()) {
+          console.error(`Empty response from ${source.name}`);
+          errors.push(`Empty response from ${source.name}`);
+          continue;
+        }
+
         const feed = parseXML(xml);
+        if (!feed) {
+          console.error(`Invalid XML from ${source.name}`);
+          errors.push(`Invalid XML from ${source.name}`);
+          continue;
+        }
         
         // Safely access entries with null checks
         const entries = Array.isArray(feed?.rss?.channel?.item) 
@@ -157,7 +179,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
-        message: `Successfully processed ${results.length} posts`,
+        message: `Successfully processed ${results.length} posts from reliable sources`,
         posts: results,
         errors: errors.length > 0 ? errors : undefined
       }),
