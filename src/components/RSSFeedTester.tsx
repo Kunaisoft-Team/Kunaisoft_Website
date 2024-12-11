@@ -39,6 +39,16 @@ export function RSSFeedTester() {
         content: "<p>This is a <strong>formatted</strong> article with <a href='#'>links</a></p>",
         category: "getting_things_done"
       }
+    },
+    {
+      name: "Null Values Test",
+      data: {
+        title: null,
+        content: undefined,
+        category: "ai_tools",
+        metadata: null,
+        tags: [null, undefined, "valid-tag"]
+      }
     }
   ];
 
@@ -61,7 +71,7 @@ export function RSSFeedTester() {
       console.error(`Test "${testCase.name}" failed:`, error);
       toast({
         title: "Test failed",
-        description: error.message,
+        description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
