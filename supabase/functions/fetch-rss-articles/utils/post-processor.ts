@@ -42,8 +42,23 @@ export async function processAndStorePost(
   sourceUrl?: string
 ) {
   try {
-    if (!entry?.title?._text || !entry?.description?._text) {
-      console.log('Skipping entry: Missing title or description');
+    // Extract title with fallbacks
+    const title = entry.title?._text || 
+                 entry.title?.toString() || 
+                 'Untitled Post';
+
+    // Extract content with fallbacks
+    let content = entry['content:encoded']?._text ||
+                 entry.content?._text ||
+                 entry.description?._text ||
+                 entry.summary?._text ||
+                 'No content available';
+
+    console.log(`Processing entry: "${title}" (content length: ${content.length})`);
+
+    // Basic validation
+    if (title === 'Untitled Post' && content === 'No content available') {
+      console.log('Skipping entry: Both title and content are missing');
       return null;
     }
 
@@ -51,9 +66,6 @@ export async function processAndStorePost(
     if (sourceUrl && !(await checkDailyPostLimits(supabase, sourceUrl))) {
       return null;
     }
-
-    const title = entry.title._text;
-    let content = entry.description._text;
 
     // Translate content if needed
     content = await translateContent(content);
