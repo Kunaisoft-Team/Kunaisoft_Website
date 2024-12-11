@@ -55,15 +55,42 @@ Deno.serve(async (req) => {
       botId = botProfile.id
     }
 
+    // Get default tag for RSS posts
+    const { data: aiToolsTag } = await supabaseClient
+      .from('tags')
+      .select('id')
+      .eq('name', 'ai_tools')
+      .single()
+
+    let tagId
+    if (!aiToolsTag) {
+      const { data: newTag } = await supabaseClient
+        .from('tags')
+        .insert({
+          name: 'ai_tools'
+        })
+        .select()
+        .single()
+      tagId = newTag?.id
+    } else {
+      tagId = aiToolsTag.id
+    }
+
     // Process each article
     if (feed.entries) {
       for (const entry of feed.entries) {
         const title = entry.title?.value || entry.title
         const content = entry.content?.value || entry.description?.value || entry.description || ''
-        const excerpt = content.substring(0, 300) + '...'
+        const excerpt = content.substring(0, 297) + '...' // Ensure we don't exceed text field limits
         const link = entry.links?.[0]?.href || entry.link
         
-        if (title) {
+        // Skip if any required field is missing
+        if (!title || !content) {
+          console.log(`Skipping entry due to missing required fields: ${title}`)
+          continue
+        }
+
+        try {
           // Check if post already exists
           const { data: existingPost } = await supabaseClient
             .from('posts')
@@ -72,8 +99,8 @@ Deno.serve(async (req) => {
             .single()
 
           if (!existingPost) {
-            // Insert new post
-            const { error: insertError } = await supabaseClient
+            // Insert new post with all required fields
+            const { data: newPost, error: postError } = await supabaseClient
               .from('posts')
               .insert({
                 title,
@@ -81,26 +108,60 @@ Deno.serve(async (req) => {
                 excerpt,
                 author_id: botId,
                 slug: link,
+                reading_time_minutes: Math.ceil(content.split(' ').length / 200), // Estimate reading time
+                meta_description: excerpt,
+                meta_keywords: ['ai', 'machine learning', 'tutorial']
               })
+              .select()
+              .single()
 
-            if (insertError) {
-              console.error('Error inserting post:', insertError)
-            } else {
-              console.log('Successfully inserted post:', title)
+            if (postError) {
+              console.error('Error inserting post:', postError)
+              continue
             }
+
+            // Add tag to post
+            if (newPost) {
+              const { error: tagError } = await supabaseClient
+                .from('posts_tags')
+                .insert({
+                  post_id: newPost.id,
+                  tag_id: tagId
+                })
+
+              if (tagError) {
+                console.error('Error adding tag to post:', tagError)
+              } else {
+                console.log('Successfully created post with tag:', title)
+              }
+            }
+          } else {
+            console.log('Post already exists:', title)
           }
+        } catch (error) {
+          console.error('Error processing entry:', error)
+          continue
         }
       }
     }
 
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return new Response(
+      JSON.stringify({ 
+        success: true,
+        message: `Processed ${feed.entries?.length || 0} entries`
+      }), 
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
   } catch (error) {
     console.error('Error in RSS fetch:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    })
+    return new Response(
+      JSON.stringify({ error: error.message }), 
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    )
   }
 })
