@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
+import { RSSEntry } from './types.ts';
 
 function createSlug(title: string): string {
   return title
@@ -8,15 +8,14 @@ function createSlug(title: string): string {
     .replace(/(^-|-$)/g, '');
 }
 
-function extractContent(entry: any): string {
+function extractContent(entry: RSSEntry): string {
   const content = entry.content?._text || 
          entry.description?._text || 
          entry['content:encoded']?._text || 
          entry.summary?._text || 
          '';
   
-  // Clean up HTML content
-  return content.replace(/<\/?[^>]+(>|$)/g, "");
+  return content ? content.replace(/<\/?[^>]+(>|$)/g, "") : '';
 }
 
 function extractImageUrl(content: string): string | null {
@@ -25,9 +24,13 @@ function extractImageUrl(content: string): string | null {
 }
 
 async function createTag(supabase: ReturnType<typeof createClient>, category: string) {
+  if (!category) {
+    console.error('Category is required for creating a tag');
+    throw new Error('Category is required');
+  }
+
   console.log('Creating or finding tag for category:', category);
   
-  // First try to find existing tag
   const { data: existingTag } = await supabase
     .from('tags')
     .select('id')
@@ -39,7 +42,6 @@ async function createTag(supabase: ReturnType<typeof createClient>, category: st
     return existingTag.id;
   }
 
-  // Create new tag if it doesn't exist
   const { data: newTag, error: tagError } = await supabase
     .from('tags')
     .insert({ name: category })
@@ -57,19 +59,24 @@ async function createTag(supabase: ReturnType<typeof createClient>, category: st
 
 export async function storeArticleAsPost(
   supabase: ReturnType<typeof createClient>,
-  entry: any,
+  entry: RSSEntry,
   category: string,
   botId: string
-) {
+): Promise<boolean> {
   try {
-    console.log('Processing entry:', entry.title?._text);
-    
-    const title = entry.title?._text || entry.title;
+    if (!entry || !botId) {
+      console.error('Missing required parameters:', { entry: !!entry, botId: !!botId });
+      return false;
+    }
+
+    const title = entry.title?._text;
     if (!title) {
       console.log('Skipping entry without title');
       return false;
     }
 
+    console.log('Processing entry:', title);
+    
     const content = extractContent(entry);
     const slug = createSlug(title);
     const imageUrl = extractImageUrl(content);
@@ -89,7 +96,7 @@ export async function storeArticleAsPost(
     // Get or create tag for the category
     const tagId = await createTag(supabase, category);
 
-    // Insert new post with RETURNING clause
+    // Insert new post
     const { data: post, error: postError } = await supabase
       .from('posts')
       .insert({
@@ -111,6 +118,11 @@ export async function storeArticleAsPost(
       throw postError;
     }
 
+    if (!post || !post.id) {
+      console.error('Post was created but no ID was returned');
+      return false;
+    }
+
     // Create posts_tags relationship
     const { error: tagRelationError } = await supabase
       .from('posts_tags')
@@ -128,6 +140,6 @@ export async function storeArticleAsPost(
     return true;
   } catch (error) {
     console.error('Error in storeArticleAsPost:', error);
-    throw error; // Re-throw the error to be handled by the caller
+    throw error;
   }
 }
