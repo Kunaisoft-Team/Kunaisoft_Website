@@ -42,7 +42,7 @@ export function useBlogPosts({
         .from("posts")
         .select(`
           *,
-          profiles (
+          profiles!posts_author_id_fkey (
             id,
             full_name,
             avatar_url,
@@ -78,7 +78,12 @@ export function useBlogPosts({
       if (data && count) {
         const transformedPosts = data.map(post => ({
           ...post,
-          profiles: post.profiles[0],
+          profiles: post.profiles || {
+            id: post.author_id,
+            full_name: 'Unknown Author',
+            avatar_url: null,
+            created_at: post.created_at
+          },
         })) as PostWithProfile[];
         
         setPosts(transformedPosts);
