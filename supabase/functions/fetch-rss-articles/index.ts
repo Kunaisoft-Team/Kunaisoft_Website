@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { parseFeed } from "https://deno.land/x/rss/mod.ts";
 import { enhanceContent } from './utils/contentEnhancer.ts';
-import { getRandomPlaceholderImage } from './utils/imageUtils.ts';
+import { getRandomTopicImage } from './utils/imageUtils.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,13 +15,32 @@ function generateSlug(title: string): string {
     .replace(/(^-|-$)/g, '');
 }
 
+function determineTopicFromContent(content: string, title: string): string {
+  const contentLower = (content + ' ' + title).toLowerCase();
+  
+  if (contentLower.includes('ai') || contentLower.includes('artificial intelligence') || contentLower.includes('machine learning')) {
+    return 'ai_tools';
+  }
+  if (contentLower.includes('prompt') || contentLower.includes('gpt') || contentLower.includes('chatbot')) {
+    return 'ai_prompts';
+  }
+  if (contentLower.includes('productivity') || contentLower.includes('efficiency') || contentLower.includes('workflow')) {
+    return 'productivity';
+  }
+  if (contentLower.includes('task') || contentLower.includes('project') || contentLower.includes('management')) {
+    return 'getting_things_done';
+  }
+  
+  return 'productivity'; // default category
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    console.log('Starting RSS fetch from Machine Learning Mastery...')
+    console.log('Starting RSS fetch process...')
     
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -43,24 +62,6 @@ Deno.serve(async (req) => {
       throw new Error('Kunaisoft News profile not found')
     }
 
-    // Get default tag for RSS posts
-    const { data: aiToolsTag } = await supabaseClient
-      .from('tags')
-      .select('id')
-      .eq('name', 'ai_tools')
-      .single()
-
-    let tagId = aiToolsTag?.id
-
-    if (!tagId) {
-      const { data: newTag } = await supabaseClient
-        .from('tags')
-        .insert({ name: 'ai_tools' })
-        .select()
-        .single()
-      tagId = newTag?.id
-    }
-
     // Fetch RSS feed
     const response = await fetch('https://machinelearningmastery.com/feed/')
     if (!response.ok) {
@@ -78,13 +79,13 @@ Deno.serve(async (req) => {
         const title = entry.title?.value || entry.title
         const originalContent = entry.content?.value || entry.description?.value || entry.description || ''
         
-        // Skip if any required field is missing
         if (!title || !originalContent) {
           console.log(`Skipping entry due to missing required fields: ${title}`)
           continue
         }
 
         const slug = generateSlug(title)
+        const topic = determineTopicFromContent(originalContent, title)
 
         try {
           // Check if post already exists
@@ -97,14 +98,14 @@ Deno.serve(async (req) => {
           if (!existingPost) {
             console.log('Creating new post:', title)
             
-            // Enhance content if needed
-            const { content, excerpt, readingTime } = enhanceContent(originalContent, title)
+            // Enhance content with topic-specific formatting and images
+            const { content, excerpt, readingTime } = enhanceContent(originalContent, title, topic)
             
-            // Get a unique image for this post
-            const imageUrl = getRandomPlaceholderImage()
+            // Get a topic-specific image
+            const imageUrl = getRandomTopicImage(topic)
             
             // Insert new post
-            const { data: newPost, error: postError } = await supabaseClient
+            const { error: postError } = await supabaseClient
               .from('posts')
               .insert({
                 title,
@@ -115,32 +116,16 @@ Deno.serve(async (req) => {
                 image_url: imageUrl,
                 reading_time_minutes: readingTime,
                 meta_description: excerpt,
-                meta_keywords: ['ai', 'machine learning', 'tutorial']
+                meta_keywords: [topic, 'tutorial', 'guide', 'technology']
               })
-              .select()
-              .single()
 
             if (postError) {
               console.error('Error inserting post:', postError)
               continue
             }
 
-            // Add tag to post
-            if (newPost && tagId) {
-              const { error: tagError } = await supabaseClient
-                .from('posts_tags')
-                .insert({
-                  post_id: newPost.id,
-                  tag_id: tagId
-                })
-
-              if (tagError) {
-                console.error('Error adding tag to post:', tagError)
-              } else {
-                console.log('Successfully created post with tag:', title)
-                processedCount++
-              }
-            }
+            console.log('Successfully created post:', title)
+            processedCount++
           } else {
             console.log('Post already exists:', title)
           }
