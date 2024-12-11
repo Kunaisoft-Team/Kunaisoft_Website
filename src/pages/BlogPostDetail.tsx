@@ -13,10 +13,35 @@ const BlogPostDetail = () => {
   const { slug } = useParams();
   const [post, setPost] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [takeaways, setTakeaways] = useState<string[]>([]);
 
   useEffect(() => {
     fetchPost();
   }, [slug]);
+
+  useEffect(() => {
+    if (post?.content) {
+      // Extract key points from the content
+      const extractedTakeaways = extractTakeaways(post.content);
+      setTakeaways(extractedTakeaways);
+    }
+  }, [post?.content]);
+
+  const extractTakeaways = (content: string): string[] => {
+    // Simple extraction logic - you can enhance this based on your needs
+    const paragraphs = content.split('</p>');
+    const points = paragraphs
+      .slice(0, 3)
+      .map(p => p.replace(/<[^>]+>/g, '').trim())
+      .filter(p => p.length > 50 && p.length < 150)
+      .map(p => p.replace(/^[^a-zA-Z]+/, ''));
+    
+    return points.length >= 3 ? points : [
+      "Understanding the core concepts and implementation details",
+      "Best practices for optimal performance and scalability",
+      "Real-world applications and practical examples"
+    ];
+  };
 
   async function fetchPost() {
     setIsLoading(true);
@@ -34,20 +59,6 @@ const BlogPostDetail = () => {
     }
     setIsLoading(false);
   }
-
-  const shareOnTwitter = () => {
-    window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(window.location.href)}`,
-      "_blank"
-    );
-  };
-
-  const shareOnLinkedIn = () => {
-    window.open(
-      `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(window.location.href)}&title=${encodeURIComponent(post.title)}`,
-      "_blank"
-    );
-  };
 
   if (isLoading) {
     return (
@@ -102,7 +113,6 @@ const BlogPostDetail = () => {
       <Navigation />
 
       <article className="w-full bg-[#F1F0FB] pt-20">
-        {/* Hero Section */}
         <div className="max-w-[800px] mx-auto px-4 py-12 animate-fade-in">
           <header className="text-center mb-12">
             <div className="flex items-center justify-center gap-2 text-sm text-gray-600 mb-6">
@@ -125,7 +135,6 @@ const BlogPostDetail = () => {
               </p>
             )}
 
-            {/* Author Info */}
             <div className="flex items-center justify-center gap-4 mb-8">
               <img
                 src={
@@ -145,7 +154,6 @@ const BlogPostDetail = () => {
               </div>
             </div>
 
-            {/* Social Share */}
             <div className="flex justify-center gap-4">
               <Button
                 variant="outline"
@@ -169,7 +177,6 @@ const BlogPostDetail = () => {
           </header>
         </div>
 
-        {/* Main Content */}
         <div className="bg-white w-full py-16">
           <div className="max-w-[800px] mx-auto px-4">
             {post.image_url && (
@@ -182,7 +189,6 @@ const BlogPostDetail = () => {
               </figure>
             )}
 
-            {/* Article Content */}
             <div
               className={cn(
                 "prose prose-lg max-w-none",
@@ -204,10 +210,8 @@ const BlogPostDetail = () => {
               dangerouslySetInnerHTML={{ __html: post.content }}
             />
 
-            {/* Key Takeaways */}
-            <KeyTakeaways />
+            <KeyTakeaways takeaways={takeaways} />
 
-            {/* Share Section */}
             <div className="mt-16 pt-8 border-t border-gray-100 animate-fade-in">
               <h3 className="text-lg font-semibold text-[#1A1F2C] mb-4">
                 Share this article
