@@ -4,6 +4,11 @@ import { RSSSource, RSSEntry } from './types.ts';
 import { storeArticleAsPost } from './storage.ts';
 
 export async function fetchRSSSources(supabase: ReturnType<typeof createClient>): Promise<RSSSource[]> {
+  if (!supabase) {
+    console.error('Supabase client is null');
+    return [];
+  }
+
   console.log('Fetching RSS sources...');
   const { data: sources, error: sourcesError } = await supabase
     .from('rss_sources')
@@ -12,7 +17,7 @@ export async function fetchRSSSources(supabase: ReturnType<typeof createClient>)
 
   if (sourcesError) {
     console.error('Error fetching RSS sources:', sourcesError);
-    throw new Error('Failed to fetch RSS sources');
+    return [];
   }
 
   if (!sources || sources.length === 0) {
@@ -21,27 +26,30 @@ export async function fetchRSSSources(supabase: ReturnType<typeof createClient>)
   }
 
   console.log(`Found ${sources.length} active RSS sources`);
-  return sources as RSSSource[];
+  return sources;
 }
 
 export async function updateLastFetchTime(
   supabase: ReturnType<typeof createClient>, 
   sourceId: string
 ): Promise<void> {
-  if (!sourceId) {
-    console.error('Invalid source ID provided');
-    throw new Error('Invalid source ID');
+  if (!supabase || !sourceId) {
+    console.error('Invalid parameters for updateLastFetchTime');
+    return;
   }
 
   console.log('Updating last fetch time for source:', sourceId);
-  const { error: updateError } = await supabase
-    .from('rss_sources')
-    .update({ last_fetch_at: new Date().toISOString() })
-    .eq('id', sourceId);
+  try {
+    const { error: updateError } = await supabase
+      .from('rss_sources')
+      .update({ last_fetch_at: new Date().toISOString() })
+      .eq('id', sourceId);
 
-  if (updateError) {
-    console.error(`Error updating last_fetch_at for source ${sourceId}:`, updateError);
-    throw updateError;
+    if (updateError) {
+      console.error(`Error updating last_fetch_at for source ${sourceId}:`, updateError);
+    }
+  } catch (error) {
+    console.error('Error in updateLastFetchTime:', error);
   }
 }
 
@@ -50,9 +58,14 @@ export async function fetchAndParseRSSFeed(
   source: RSSSource, 
   botId: string
 ): Promise<number> {
-  if (!source || !source.url || !botId) {
-    console.error('Invalid parameters provided:', { source: !!source, botId: !!botId });
-    throw new Error('Invalid parameters for RSS feed processing');
+  if (!supabase || !source || !source.url || !botId) {
+    console.error('Invalid parameters for fetchAndParseRSSFeed:', { 
+      hasSupabase: !!supabase, 
+      hasSource: !!source, 
+      hasUrl: source?.url, 
+      hasBotId: !!botId 
+    });
+    return 0;
   }
 
   console.log(`Fetching RSS feed: ${source.name} (${source.url})`);
@@ -67,19 +80,29 @@ export async function fetchAndParseRSSFeed(
     });
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      console.error(`HTTP error! status: ${response.status}`);
+      return 0;
     }
     
     const xml = await response.text();
     if (!xml) {
-      throw new Error('Empty XML response received');
+      console.error('Empty XML response received');
+      return 0;
     }
 
     console.log(`Received XML response of length: ${xml.length}`);
     
-    const parsedXML = parseXML(xml);
+    let parsedXML;
+    try {
+      parsedXML = parseXML(xml);
+    } catch (parseError) {
+      console.error('Failed to parse XML:', parseError);
+      return 0;
+    }
+
     if (!parsedXML) {
-      throw new Error('Failed to parse XML');
+      console.error('Parsed XML is null');
+      return 0;
     }
 
     const entries = (parsedXML.rss?.channel?.item || parsedXML.feed?.entry || []) as RSSEntry[];
@@ -92,8 +115,8 @@ export async function fetchAndParseRSSFeed(
     
     let storedCount = 0;
     for (const entry of entries) {
+      if (!entry) continue;
       try {
-        if (!entry) continue;
         const stored = await storeArticleAsPost(supabase, entry, source.category, botId);
         if (stored) storedCount++;
       } catch (error) {
@@ -106,6 +129,6 @@ export async function fetchAndParseRSSFeed(
     return storedCount;
   } catch (error) {
     console.error(`Error processing feed ${source.name}:`, error);
-    throw error;
+    return 0;
   }
 }

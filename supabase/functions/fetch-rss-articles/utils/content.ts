@@ -1,4 +1,9 @@
 export function createSlug(title: string): string {
+  if (!title) {
+    console.error('Cannot create slug from empty title');
+    return '';
+  }
+
   return title
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -6,10 +11,15 @@ export function createSlug(title: string): string {
 }
 
 export function extractContent(item: any): string {
-  const content = item.content || 
-         item['content:encoded'] || 
-         item.description || 
-         item.summary || 
+  if (!item) {
+    console.error('Cannot extract content from null item');
+    return '';
+  }
+
+  const content = item.content?._text || 
+         item['content:encoded']?._text || 
+         item.description?._text || 
+         item.summary?._text || 
          '';
   
   console.log('Extracted content length:', content.length);
@@ -17,6 +27,11 @@ export function extractContent(item: any): string {
 }
 
 export function extractImageUrl(item: any, content: string): string | null {
+  if (!item) {
+    console.error('Cannot extract image URL from null item');
+    return null;
+  }
+
   if (item['media:content']?.url) {
     console.log('Found media:content image:', item['media:content'].url);
     return item['media:content'].url;
@@ -27,10 +42,12 @@ export function extractImageUrl(item: any, content: string): string | null {
     return item.enclosure.url;
   }
 
-  const imgMatch = content.match(/<img[^>]+src="([^">]+)"/);
-  if (imgMatch) {
-    console.log('Found image in content:', imgMatch[1]);
-    return imgMatch[1];
+  if (content) {
+    const imgMatch = content.match(/<img[^>]+src="([^">]+)"/);
+    if (imgMatch) {
+      console.log('Found image in content:', imgMatch[1]);
+      return imgMatch[1];
+    }
   }
 
   console.log('No image found in RSS item');

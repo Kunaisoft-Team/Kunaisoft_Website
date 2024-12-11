@@ -9,8 +9,13 @@ export async function storeArticleAsPost(
   botId: string
 ): Promise<boolean> {
   try {
-    if (!entry || !botId) {
-      console.error('Missing required parameters:', { entry: !!entry, botId: !!botId });
+    if (!supabase || !entry || !category || !botId) {
+      console.error('Missing required parameters:', { 
+        hasSupabase: !!supabase, 
+        hasEntry: !!entry, 
+        hasCategory: !!category, 
+        hasBotId: !!botId 
+      });
       return false;
     }
 
@@ -23,98 +28,123 @@ export async function storeArticleAsPost(
     console.log('Processing entry:', title);
     
     const content = extractContent(entry);
-    const slug = createSlug(title);
-    const imageUrl = extractImageUrl(entry, content);
-
-    // Check if post already exists
-    const { data: existingPost, error: checkError } = await supabase
-      .from('posts')
-      .select('id')
-      .eq('slug', slug)
-      .single();
-
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.error('Error checking existing post:', checkError);
+    if (!content) {
+      console.log('Skipping entry without content');
       return false;
     }
 
-    if (existingPost) {
-      console.log(`Post with slug ${slug} already exists, skipping`);
+    const slug = createSlug(title);
+    if (!slug) {
+      console.log('Failed to create slug for entry');
+      return false;
+    }
+
+    const imageUrl = extractImageUrl(entry, content);
+
+    // Check if post already exists
+    try {
+      const { data: existingPost, error: checkError } = await supabase
+        .from('posts')
+        .select('id')
+        .eq('slug', slug)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking existing post:', checkError);
+        return false;
+      }
+
+      if (existingPost) {
+        console.log(`Post with slug ${slug} already exists, skipping`);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error checking existing post:', error);
       return false;
     }
 
     // Insert new post
-    const { data: post, error: postError } = await supabase
-      .from('posts')
-      .insert({
-        title,
-        content,
-        slug,
-        image_url: imageUrl,
-        author_id: botId,
-        excerpt: content.substring(0, 200) + '...',
-        meta_description: content.substring(0, 160),
-        meta_keywords: [category],
-        reading_time_minutes: Math.ceil(content.split(' ').length / 200)
-      })
-      .select()
-      .single();
-
-    if (postError) {
-      console.error('Error creating post:', postError);
-      throw postError;
-    }
-
-    if (!post || !post.id) {
-      console.error('Post was created but no ID was returned');
-      return false;
-    }
-
-    // Get or create tag for the category
-    const { data: existingTag, error: tagError } = await supabase
-      .from('tags')
-      .select('id')
-      .eq('name', category)
-      .single();
-
-    let tagId: string;
-    if (tagError && tagError.code === 'PGRST116') {
-      // Tag doesn't exist, create it
-      const { data: newTag, error: createTagError } = await supabase
-        .from('tags')
-        .insert({ name: category })
+    try {
+      const { data: post, error: postError } = await supabase
+        .from('posts')
+        .insert({
+          title,
+          content,
+          slug,
+          image_url: imageUrl,
+          author_id: botId,
+          excerpt: content.substring(0, 200) + '...',
+          meta_description: content.substring(0, 160),
+          meta_keywords: category ? [category] : [],
+          reading_time_minutes: Math.ceil(content.split(' ').length / 200)
+        })
         .select()
         .single();
 
-      if (createTagError) {
-        console.error('Error creating tag:', createTagError);
-        throw createTagError;
+      if (postError) {
+        console.error('Error creating post:', postError);
+        return false;
       }
-      tagId = newTag.id;
-    } else if (tagError) {
-      console.error('Error checking existing tag:', tagError);
-      throw tagError;
-    } else {
-      tagId = existingTag.id;
+
+      if (!post || !post.id) {
+        console.error('Post was created but no ID was returned');
+        return false;
+      }
+
+      // Get or create tag for the category
+      let tagId: string;
+      try {
+        const { data: existingTag, error: tagError } = await supabase
+          .from('tags')
+          .select('id')
+          .eq('name', category)
+          .single();
+
+        if (tagError && tagError.code === 'PGRST116') {
+          // Tag doesn't exist, create it
+          const { data: newTag, error: createTagError } = await supabase
+            .from('tags')
+            .insert({ name: category })
+            .select()
+            .single();
+
+          if (createTagError) {
+            console.error('Error creating tag:', createTagError);
+            return false;
+          }
+          tagId = newTag.id;
+        } else if (tagError) {
+          console.error('Error checking existing tag:', tagError);
+          return false;
+        } else {
+          tagId = existingTag.id;
+        }
+
+        // Create posts_tags relationship
+        const { error: tagRelationError } = await supabase
+          .from('posts_tags')
+          .insert({
+            post_id: post.id,
+            tag_id: tagId
+          });
+
+        if (tagRelationError) {
+          console.error('Error creating post-tag relationship:', tagRelationError);
+          return false;
+        }
+      } catch (error) {
+        console.error('Error handling tags:', error);
+        return false;
+      }
+
+      console.log(`Successfully created post: ${title} with tag ${category}`);
+      return true;
+    } catch (error) {
+      console.error('Error creating post:', error);
+      return false;
     }
-
-    // Create posts_tags relationship
-    const { error: tagRelationError } = await supabase
-      .from('posts_tags')
-      .insert({
-        post_id: post.id,
-        tag_id: tagId
-      });
-
-    if (tagRelationError) {
-      console.error('Error creating post-tag relationship:', tagRelationError);
-      throw tagRelationError;
-    }
-
-    console.log(`Successfully created post: ${title} with tag ${category}`);
-    return true;
   } catch (error) {
     console.error('Error in storeArticleAsPost:', error);
-    throw error;
+    return false;
   }
 }
