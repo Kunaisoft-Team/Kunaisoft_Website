@@ -110,6 +110,36 @@ export type Database = {
         }
         Relationships: []
       }
+      rss_sources: {
+        Row: {
+          active: boolean | null
+          category: string
+          created_at: string
+          id: string
+          last_fetch_at: string | null
+          name: string
+          url: string
+        }
+        Insert: {
+          active?: boolean | null
+          category: string
+          created_at?: string
+          id?: string
+          last_fetch_at?: string | null
+          name: string
+          url: string
+        }
+        Update: {
+          active?: boolean | null
+          category?: string
+          created_at?: string
+          id?: string
+          last_fetch_at?: string | null
+          name?: string
+          url?: string
+        }
+        Relationships: []
+      }
       tags: {
         Row: {
           created_at: string
