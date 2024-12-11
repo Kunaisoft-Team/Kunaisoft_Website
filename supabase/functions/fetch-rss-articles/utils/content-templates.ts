@@ -64,7 +64,7 @@ export const generatePostStructure = (
       ` : ''}
 
       <div class="content-section space-y-8">
-        ${formatContentSection(content)}
+        ${content}
       </div>
 
       <footer class="mt-16 pt-8 border-t border-gray-200">
@@ -113,49 +113,4 @@ export const formatContentSection = (content: string): string => {
       </div>
     `;
   }).join('\n');
-};
-
-export const enhanceContentWithImages = (content: string, images: string[]): string => {
-  const sections = content.split('</div>');
-  let imageIndex = 0;
-  
-  return sections.map((section, index) => {
-    if (!section.trim()) return '';
-    
-    let enhanced = section + '</div>';
-    
-    // Add an image after every 2-3 sections
-    if (index % 3 === 1 && images[imageIndex]) {
-      enhanced += `
-        <figure class="my-12 animate-fade-up">
-          <div class="aspect-w-16 aspect-h-9 rounded-xl overflow-hidden shadow-lg">
-            <img 
-              src="${images[imageIndex]}" 
-              alt="Illustration for article section"
-              class="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-              loading="lazy"
-            />
-          </div>
-          <figcaption class="mt-3 text-sm text-gray-600 text-center">
-            ${generateImageCaption()}
-          </figcaption>
-        </figure>
-      `;
-      imageIndex++;
-    }
-    
-    return enhanced;
-  }).join('\n');
-};
-
-const generateImageCaption = (): string => {
-  const captions = [
-    "Visualizing modern solutions",
-    "Innovation in practice",
-    "Strategic implementation",
-    "Industry best practices",
-    "Real-world application"
-  ];
-  
-  return captions[Math.floor(Math.random() * captions.length)];
 };
