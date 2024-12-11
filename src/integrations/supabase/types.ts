@@ -113,7 +113,7 @@ export type Database = {
       rss_sources: {
         Row: {
           active: boolean | null
-          category: string
+          category: Database["public"]["Enums"]["rss_category"]
           created_at: string
           id: string
           last_fetch_at: string | null
@@ -122,7 +122,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean | null
-          category: string
+          category: Database["public"]["Enums"]["rss_category"]
           created_at?: string
           id?: string
           last_fetch_at?: string | null
@@ -131,7 +131,7 @@ export type Database = {
         }
         Update: {
           active?: boolean | null
-          category?: string
+          category?: Database["public"]["Enums"]["rss_category"]
           created_at?: string
           id?: string
           last_fetch_at?: string | null
@@ -166,7 +166,11 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      rss_category:
+        | "ai_tools"
+        | "ai_prompts"
+        | "productivity"
+        | "getting_things_done"
     }
     CompositeTypes: {
       [_ in never]: never
