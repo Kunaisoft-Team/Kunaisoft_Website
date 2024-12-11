@@ -23,6 +23,10 @@ export const categoryImages: { [key: string]: number[] } = {
   business: [8, 9, 10],
 };
 
+// Keep track of recently used images to avoid repetition
+let recentlyUsedImages: string[] = [];
+const MAX_RECENT_IMAGES = 5;
+
 export function selectRandomPlaceholderImage(category?: string): string {
   let availableImages = unsplashImages;
   
@@ -30,8 +34,26 @@ export function selectRandomPlaceholderImage(category?: string): string {
     availableImages = categoryImages[category].map(index => unsplashImages[index]);
   }
   
-  const randomIndex = Math.floor(Math.random() * availableImages.length);
-  return `https://images.unsplash.com/${availableImages[randomIndex]}`;
+  // Filter out recently used images
+  const unusedImages = availableImages.filter(img => !recentlyUsedImages.includes(img));
+  
+  // If all images have been recently used, reset the tracking
+  if (unusedImages.length === 0) {
+    recentlyUsedImages = [];
+    unusedImages.push(...availableImages);
+  }
+  
+  // Select a random unused image
+  const randomIndex = Math.floor(Math.random() * unusedImages.length);
+  const selectedImage = unusedImages[randomIndex];
+  
+  // Update recently used images
+  recentlyUsedImages.push(selectedImage);
+  if (recentlyUsedImages.length > MAX_RECENT_IMAGES) {
+    recentlyUsedImages.shift();
+  }
+  
+  return `https://images.unsplash.com/${selectedImage}`;
 }
 
 export function generateContentImages(title: string, content: string, category?: string): string[] {
