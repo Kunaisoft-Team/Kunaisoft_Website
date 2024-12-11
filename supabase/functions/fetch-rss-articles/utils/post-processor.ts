@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { formatContent } from './content-formatter.ts';
 import { extractKeyPoints, extractQuote, extractStatistics } from './content-extractors.ts';
 import { createSlug } from './content.ts';
+import { selectRandomPlaceholderImage, generateContentImages, enhanceContentWithImages } from './image-processor.ts';
 
 export async function processAndStorePost(supabase: ReturnType<typeof createClient>, entry: any, botId: string, sourceUrl: string) {
   try {
@@ -17,17 +18,15 @@ export async function processAndStorePost(supabase: ReturnType<typeof createClie
                    entry?.description?._text || 
                    generateDefaultContent(title, sourceUrl);
 
-    console.log('Content length:', content.length);
-
+    // Generate hero image and content images
+    const heroImage = entry?.image_url || selectRandomPlaceholderImage();
+    const contentImages = generateContentImages(title, content);
+    
     const keyPoints = extractKeyPoints(content);
     const quote = extractQuote(content);
     const statistics = extractStatistics(content);
     
-    // Get a relevant image from Unsplash if none provided
-    const imageUrl = entry.image_url || 
-                    `https://source.unsplash.com/1600x900/?${encodeURIComponent(title.split(' ').slice(0, 3).join(' '))}`;
-    
-    // Format content with proper HTML structure and SEO optimization
+    // Format content with proper HTML structure and enhanced imagery
     const formattedContent = `
       <article class="prose prose-lg max-w-none">
         <header class="mb-8 animate-fade-in">
@@ -35,7 +34,7 @@ export async function processAndStorePost(supabase: ReturnType<typeof createClie
           
           <div class="relative h-[500px] mb-6 rounded-xl overflow-hidden shadow-lg">
             <img 
-              src="${imageUrl}" 
+              src="${heroImage}" 
               alt="${title}"
               class="w-full h-full object-cover transition-transform hover:scale-105 duration-500"
             />
@@ -74,28 +73,8 @@ export async function processAndStorePost(supabase: ReturnType<typeof createClie
         ` : ''}
 
         <div class="content-section space-y-6">
-          ${formatContent(content)}
+          ${enhanceContentWithImages(formatContent(content), contentImages)}
         </div>
-
-        <section class="mt-12 space-y-8">
-          <h2 class="text-2xl font-semibold text-[#1A1F2C]">Industry Impact</h2>
-          <p class="text-gray-700 leading-relaxed">
-            This development represents a significant shift in how businesses approach digital transformation. 
-            Organizations implementing these solutions have reported substantial improvements in efficiency and productivity.
-          </p>
-          
-          <h3 class="text-xl font-semibold text-[#1A1F2C]">Real-World Applications</h3>
-          <p class="text-gray-700 leading-relaxed">
-            Leading companies across various sectors have successfully adopted similar approaches, 
-            demonstrating the versatility and effectiveness of these solutions in real-world scenarios.
-          </p>
-
-          <h3 class="text-xl font-semibold text-[#1A1F2C]">Future Implications</h3>
-          <p class="text-gray-700 leading-relaxed">
-            As technology continues to evolve, we can expect to see more innovative applications and implementations.
-            Organizations that embrace these changes early will be better positioned for future success.
-          </p>
-        </section>
 
         <footer class="mt-12 pt-8 border-t border-gray-200">
           <div class="flex justify-between items-center">
@@ -128,7 +107,7 @@ export async function processAndStorePost(supabase: ReturnType<typeof createClie
       </article>
     `;
 
-    // Calculate reading time (assuming average reading speed of 200 words per minute)
+    // Calculate reading time
     const wordCount = content.split(/\s+/).length;
     const readingTimeMinutes = Math.ceil(wordCount / 200);
 
@@ -143,13 +122,13 @@ export async function processAndStorePost(supabase: ReturnType<typeof createClie
       excerpt: generateExcerpt(entry?.description?._text || content),
       author_id: botId,
       slug,
-      image_url: imageUrl,
+      image_url: heroImage,
       reading_time_minutes: readingTimeMinutes,
       meta_description: generateMetaDescription(entry?.description?._text || content, title),
       meta_keywords: extractKeywords(content)
     };
 
-    // Store in database with error handling
+    // Store in database
     const { data, error } = await supabase
       .from('posts')
       .insert(postData)
@@ -171,7 +150,6 @@ export async function processAndStorePost(supabase: ReturnType<typeof createClie
 
 function generateSEOTitle(description: string | null, sourceUrl: string): string {
   if (description) {
-    // Extract main topic from description
     const words = description.split(' ').slice(0, 8);
     return `${words.join(' ')}... | Latest Industry Insights`;
   }
