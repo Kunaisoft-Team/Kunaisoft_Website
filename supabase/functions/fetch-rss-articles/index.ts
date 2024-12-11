@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
-import { parse } from "https://deno.land/x/rss@0.5.8/mod.ts";
+import { parseFeed } from "https://deno.land/x/rss/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
     }
 
     const xml = await response.text()
-    const feed = await parse(xml)
+    const feed = await parseFeed(xml)
     
     console.log(`Fetched ${feed.entries?.length || 0} articles from RSS feed`)
 
@@ -58,10 +58,10 @@ Deno.serve(async (req) => {
     // Process each article
     if (feed.entries) {
       for (const entry of feed.entries) {
-        const title = entry.title?.value
-        const content = entry.content?.value || entry.description?.value || ''
+        const title = entry.title?.value || entry.title
+        const content = entry.content?.value || entry.description?.value || entry.description || ''
         const excerpt = content.substring(0, 300) + '...'
-        const link = entry.links?.[0]?.href
+        const link = entry.links?.[0]?.href || entry.link
         
         if (title) {
           // Check if post already exists
