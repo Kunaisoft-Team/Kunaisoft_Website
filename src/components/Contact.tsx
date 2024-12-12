@@ -37,12 +37,12 @@ export const Contact = () => {
             <div className="text-center">
               <Mail className="h-8 w-8 mb-4 mx-auto text-primary" />
               <h3 className="font-semibold mb-2">Email Us</h3>
-              <p className="text-gray-600">contact@agency.com</p>
+              <p className="text-gray-600">support@kunaisoft.com</p>
             </div>
             <div className="text-center">
               <Phone className="h-8 w-8 mb-4 mx-auto text-primary" />
               <h3 className="font-semibold mb-2">Call Us</h3>
-              <p className="text-gray-600">+1 (555) 123-4567</p>
+              <p className="text-gray-600">+58 (424) 762-0527</p>
             </div>
             <div className="text-center">
               <MessageSquare className="h-8 w-8 mb-4 mx-auto text-primary" />
