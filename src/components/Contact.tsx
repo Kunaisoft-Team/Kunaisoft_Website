@@ -23,11 +23,11 @@ export const Contact = () => {
   };
 
   return (
-    <section className="py-20 bg-gray-50">
+    <section id="contact" className="py-20 bg-gray-50">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Get in Touch</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#253557]">Get in Touch</h2>
             <p className="text-lg text-gray-600">
               Ready to start your project? Contact us today for a free consultation.
             </p>
@@ -37,12 +37,12 @@ export const Contact = () => {
             <div className="text-center">
               <Mail className="h-8 w-8 mb-4 mx-auto text-primary" />
               <h3 className="font-semibold mb-2">Email Us</h3>
-              <p className="text-gray-600">contact@agency.com</p>
+              <p className="text-gray-600">support@kunaisoft.com</p>
             </div>
             <div className="text-center">
               <Phone className="h-8 w-8 mb-4 mx-auto text-primary" />
               <h3 className="font-semibold mb-2">Call Us</h3>
-              <p className="text-gray-600">+1 (555) 123-4567</p>
+              <p className="text-gray-600">+58 (424) 762-0527</p>
             </div>
             <div className="text-center">
               <MessageSquare className="h-8 w-8 mb-4 mx-auto text-primary" />
