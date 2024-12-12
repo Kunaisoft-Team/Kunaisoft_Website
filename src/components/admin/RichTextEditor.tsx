@@ -7,9 +7,10 @@ import { EditorToolbar } from './editor/EditorToolbar';
 interface RichTextEditorProps {
   content: string;
   onChange: (value: string) => void;
+  required?: boolean;
 }
 
-export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
+export const RichTextEditor = ({ content, onChange, required = false }: RichTextEditorProps) => {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -33,7 +34,9 @@ export const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
       <EditorToolbar editor={editor} />
       <EditorContent 
         editor={editor} 
-        className="prose max-w-none p-4 min-h-[200px] focus:outline-none"
+        className={`prose max-w-none p-4 min-h-[200px] focus:outline-none ${
+          required && !content ? 'border-red-500' : ''
+        }`}
       />
     </div>
   );

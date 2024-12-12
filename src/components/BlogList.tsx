@@ -8,6 +8,7 @@ interface BlogListProps {
   selectedTag: string | null;
   selectedYear: number | null;
   selectedAuthor: string | null;
+  searchQuery?: string;
 }
 
 export function BlogList({
@@ -16,12 +17,14 @@ export function BlogList({
   selectedTag,
   selectedYear,
   selectedAuthor,
+  searchQuery,
 }: BlogListProps) {
   const { posts, totalPages, isLoading } = useBlogPosts({
     currentPage,
     selectedTag,
     selectedYear,
     selectedAuthor,
+    searchQuery,
   });
 
   if (isLoading) {
