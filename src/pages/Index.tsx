@@ -4,7 +4,6 @@ import { Services } from "@/components/Services";
 import { Portfolio } from "@/components/Portfolio";
 import { Contact } from "@/components/Contact";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
-import { RSSFeedTester } from "@/components/RSSFeedTester";
 
 const Index = () => {
   return (
@@ -15,7 +14,6 @@ const Index = () => {
       <Portfolio />
       <Contact />
       <WhatsAppButton />
-      <RSSFeedTester />
     </main>
   );
 };

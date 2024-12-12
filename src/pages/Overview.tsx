@@ -4,7 +4,7 @@ const Overview = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
-      <div className="container mx-auto px-4 pt-24">
+      <div className="container mx-auto px-4 pt-48">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-4xl font-bold text-[#253557] text-center mb-12">Overview</h1>
           <ul className="space-y-6 text-lg text-gray-700">

@@ -8,7 +8,7 @@ export const Navigation = () => {
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
-    element?.scrollIntoView({ behavior: "smooth" });
+    element?.scrollIntoView({ block: "center", behavior: "smooth" });
     setIsOpen(false);
   };
 
@@ -20,7 +20,7 @@ export const Navigation = () => {
             <Link to="/" onClick={() => setIsOpen(false)}>
               <img
                 src="/lovable-uploads/3d8a4356-31e4-45d6-b3f4-db94cc44c5e5.png"
-                alt="Company Logo"
+                alt="Kunaisoft Logo"
                 className="h-12 w-12 md:h-24 md:w-24"
               />
             </Link>
