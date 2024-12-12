@@ -31,29 +31,47 @@ export const PostForm = ({
   return (
     <form onSubmit={onSubmit} className="mb-8 space-y-4 max-w-2xl bg-white p-6 rounded-lg shadow">
       <div>
-        <label className="block text-sm font-medium text-gray-700">Title</label>
+        <label className="block text-sm font-medium text-gray-700">
+          Title <span className="text-red-500">*</span>
+        </label>
         <Input
           type="text"
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
           required
+          placeholder="Enter post title"
+          className="mt-1"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700">Excerpt</label>
+        <label className="block text-sm font-medium text-gray-700">
+          Content <span className="text-red-500">*</span>
+        </label>
+        <RichTextEditor 
+          content={content} 
+          onChange={onContentChange} 
+          required={true}
+        />
+        {content.length === 0 && (
+          <p className="text-sm text-red-500 mt-1">Content is required</p>
+        )}
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Excerpt <span className="text-red-500">*</span>
+        </label>
         <Input
           type="text"
           value={excerpt}
           onChange={(e) => onExcerptChange(e.target.value)}
+          required
+          placeholder="Enter post excerpt"
+          className="mt-1"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700">Content</label>
-        <RichTextEditor content={content} onChange={onContentChange} />
-      </div>
-      <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Select Tags
+          Select Tags <span className="text-red-500">*</span>
         </label>
         <div className="flex flex-wrap gap-2">
           {tags.map((tag: any) => (
@@ -67,8 +85,16 @@ export const PostForm = ({
             </Badge>
           ))}
         </div>
+        {selectedTags.length === 0 && (
+          <p className="text-sm text-red-500 mt-1">Please select at least one tag</p>
+        )}
       </div>
-      <Button type="submit">Create Post</Button>
+      <Button 
+        type="submit" 
+        disabled={!title || !content || !excerpt || selectedTags.length === 0}
+      >
+        Create Post
+      </Button>
     </form>
   );
 };

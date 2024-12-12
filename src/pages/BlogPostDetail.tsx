@@ -3,16 +3,44 @@ import { useParams } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { supabase } from "@/integrations/supabase/client";
 import { Helmet } from "react-helmet";
+import { Skeleton } from "@/components/ui/skeleton";
+import { BlogHeader } from "@/components/blog/BlogHeader";
+import { BlogContent } from "@/components/blog/BlogContent";
 
 const BlogPostDetail = () => {
   const { slug } = useParams();
   const [post, setPost] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [takeaways, setTakeaways] = useState<string[]>([]);
 
   useEffect(() => {
     fetchPost();
   }, [slug]);
 
+  useEffect(() => {
+    if (post?.content) {
+      const extractedTakeaways = extractTakeaways(post.content);
+      setTakeaways(extractedTakeaways);
+    }
+  }, [post?.content]);
+
+  const extractTakeaways = (content: string): string[] => {
+    const paragraphs = content.split('</p>');
+    const points = paragraphs
+      .slice(0, 3)
+      .map(p => p.replace(/<[^>]+>/g, '').trim())
+      .filter(p => p.length > 50 && p.length < 150)
+      .map(p => p.replace(/^[^a-zA-Z]+/, ''));
+    
+    return points.length >= 3 ? points : [
+      "Understanding the core concepts and implementation details",
+      "Best practices for optimal performance and scalability",
+      "Real-world applications and practical examples"
+    ];
+  };
+
   async function fetchPost() {
+    setIsLoading(true);
     const { data } = await supabase
       .from("posts")
       .select(`
@@ -25,119 +53,76 @@ const BlogPostDetail = () => {
     if (data) {
       setPost(data);
     }
+    setIsLoading(false);
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Navigation />
+        <div className="max-w-[800px] mx-auto px-4 py-12">
+          <Skeleton className="h-8 w-3/4 mb-4" />
+          <Skeleton className="h-6 w-1/2 mb-8" />
+          <Skeleton className="h-[400px] w-full mb-8" />
+          <div className="space-y-4">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-4 w-4/6" />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!post) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-2xl text-gray-600">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-2xl text-gray-600">Post not found</div>
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#F1F0FB]">
+    <main className="min-h-screen bg-white">
       <Helmet>
-        <title>{post.title} | Our Blog</title>
+        <title>{post.title} | Kunaisoft Blog</title>
         <meta name="description" content={post.meta_description || post.excerpt} />
         {post.meta_keywords && (
           <meta name="keywords" content={post.meta_keywords.join(", ")} />
         )}
         <meta property="og:title" content={post.title} />
-        <meta property="og:description" content={post.meta_description || post.excerpt} />
+        <meta
+          property="og:description"
+          content={post.meta_description || post.excerpt}
+        />
         {post.image_url && <meta property="og:image" content={post.image_url} />}
       </Helmet>
 
       <Navigation />
-      
-      <article className="container mx-auto px-4 py-12 max-w-4xl">
-        {/* Hero Section */}
-        <div className="mb-12">
-          {post.image_url ? (
-            <img
-              src={post.image_url}
-              alt={post.title}
-              className="w-full h-[500px] object-cover rounded-xl shadow-lg mb-8"
-            />
-          ) : (
-            <img
-              src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b"
-              alt="Technology"
-              className="w-full h-[500px] object-cover rounded-xl shadow-lg mb-8"
-            />
-          )}
 
-          <h1 className="text-5xl font-bold mb-6 text-[#1A1F2C] leading-tight">
-            {post.title}
-          </h1>
-
-          {/* Author Info */}
-          <div className="flex items-center mb-8 bg-white p-4 rounded-lg shadow-sm">
-            {post.profiles.avatar_url ? (
-              <img
-                src={post.profiles.avatar_url}
-                alt={post.profiles.full_name}
-                className="w-14 h-14 rounded-full mr-4 border-2 border-[#8B5CF6]"
-              />
-            ) : (
-              <div className="w-14 h-14 rounded-full mr-4 bg-[#8B5CF6] flex items-center justify-center text-white text-xl">
-                {post.profiles.full_name.charAt(0)}
-              </div>
-            )}
-            <div>
-              <p className="font-semibold text-lg text-[#1A1F2C]">
-                {post.profiles.full_name}
-              </p>
-              <div className="flex items-center text-gray-600 text-sm">
-                <span>{new Date(post.created_at).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}</span>
-                {post.reading_time_minutes && (
-                  <>
-                    <span className="mx-2">•</span>
-                    <span>{post.reading_time_minutes} min read</span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
+      <article className="w-full bg-[#F1F0FB] pt-20">
+        <div className="max-w-[800px] mx-auto px-4 py-12 animate-fade-in">
+          <BlogHeader
+            title={post.title}
+            excerpt={post.excerpt}
+            createdAt={post.created_at}
+            readingTimeMinutes={post.reading_time_minutes}
+            author={{
+              fullName: post.profiles.full_name,
+              avatarUrl: post.profiles.avatar_url,
+            }}
+          />
         </div>
 
-        {/* Article Content */}
-        <div 
-          className="prose prose-lg max-w-none bg-white p-8 rounded-xl shadow-sm
-            prose-headings:text-[#1A1F2C] prose-headings:font-bold
-            prose-h1:text-4xl prose-h1:mb-8
-            prose-h2:text-3xl prose-h2:mb-6 prose-h2:mt-12
-            prose-p:text-gray-700 prose-p:leading-relaxed prose-p:mb-6
-            prose-a:text-[#8B5CF6] prose-a:no-underline hover:prose-a:underline
-            prose-strong:text-[#1A1F2C] prose-strong:font-semibold
-            prose-ul:list-disc prose-ul:pl-6 prose-ul:my-6
-            prose-li:text-gray-700 prose-li:mb-2
-            prose-img:rounded-lg prose-img:shadow-md"
-          dangerouslySetInnerHTML={{ __html: post.content }}
+        <BlogContent
+          content={post.content}
+          imageUrl={post.image_url}
+          title={post.title}
+          takeaways={takeaways}
         />
-
-        {/* Social Share Section */}
-        <div className="mt-12 p-6 bg-white rounded-xl shadow-sm">
-          <h3 className="text-xl font-semibold text-[#1A1F2C] mb-4">Share this article</h3>
-          <div className="flex space-x-4">
-            <button className="px-6 py-2 bg-[#1DA1F2] text-white rounded-lg hover:bg-opacity-90 transition-colors">
-              Twitter
-            </button>
-            <button className="px-6 py-2 bg-[#4267B2] text-white rounded-lg hover:bg-opacity-90 transition-colors">
-              Facebook
-            </button>
-            <button className="px-6 py-2 bg-[#0077B5] text-white rounded-lg hover:bg-opacity-90 transition-colors">
-              LinkedIn
-            </button>
-          </div>
-        </div>
       </article>
     </main>
   );
-}
+};
 
 export default BlogPostDetail;

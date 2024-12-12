@@ -20,6 +20,7 @@ export type Database = {
           meta_description: string | null
           meta_keywords: string[] | null
           reading_time_minutes: number | null
+          search_vector: unknown | null
           slug: string | null
           title: string
         }
@@ -33,6 +34,7 @@ export type Database = {
           meta_description?: string | null
           meta_keywords?: string[] | null
           reading_time_minutes?: number | null
+          search_vector?: unknown | null
           slug?: string | null
           title: string
         }
@@ -46,6 +48,7 @@ export type Database = {
           meta_description?: string | null
           meta_keywords?: string[] | null
           reading_time_minutes?: number | null
+          search_vector?: unknown | null
           slug?: string | null
           title?: string
         }
@@ -95,18 +98,21 @@ export type Database = {
           created_at: string
           full_name: string
           id: string
+          is_bot: boolean | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
           full_name: string
           id: string
+          is_bot?: boolean | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
           full_name?: string
           id?: string
+          is_bot?: boolean | null
         }
         Relationships: []
       }
@@ -136,7 +142,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      rss_category:
+        | "ai_tools"
+        | "ai_prompts"
+        | "productivity"
+        | "getting_things_done"
+        | "business_contributions"
+        | "people_contact_networks"
     }
     CompositeTypes: {
       [_ in never]: never
