@@ -1,0 +1,24 @@
+name: Auto Pull Request
+
+on:
+  push:
+    branches:
+      - lovable
+
+jobs:
+  create-pull-request:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base-branch: develop
+          branch: lovable
+          commit-message: "Lovable to Develop."
+          title: "Auto-generated pull request"
+          body: "This pull request was generated automatically."
