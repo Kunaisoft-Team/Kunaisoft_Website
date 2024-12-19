@@ -19,7 +19,7 @@ export const Contact = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('https://primary-production-bfff.up.railway.app/webhook/a8fe6593-9566-4795-9534-8a2a3728b914', {
+      const response = await fetch('https://hkdk.events/0l2gsdm2bclgjq', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
