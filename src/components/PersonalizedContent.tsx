@@ -31,7 +31,6 @@ export function PersonalizedContent() {
           throw error;
         }
 
-        // If we have data and it's properly formatted, use it
         if (data?.suggestions && typeof data.suggestions === 'string') {
           return data.suggestions;
         }
@@ -82,34 +81,30 @@ export function PersonalizedContent() {
   `;
 
   const renderRecommendationCards = (content: string) => {
-    // Parse the HTML content into a document
     const parser = new DOMParser();
     const doc = parser.parseFromString(content, 'text/html');
     
-    // Extract sections (assuming h3 headers are used as section breaks)
     const sections = [];
     let currentSection = null;
     
     doc.body.childNodes.forEach((node) => {
-      if (node.nodeName === 'H3') {
+      if (node instanceof HTMLHeadingElement && node.tagName === 'H3') {
         if (currentSection) {
           sections.push(currentSection);
         }
         currentSection = {
-          title: node.textContent,
+          title: node.textContent || '',
           content: [],
           icon: getRandomIcon()
         };
-      } else if (currentSection && node.nodeName === 'UL') {
-        // Extract list items
-        Array.from(node.children).forEach(li => {
-          if (li.textContent?.trim()) {
+      } else if (currentSection && node instanceof HTMLUListElement) {
+        Array.from(node.children).forEach((li) => {
+          if (li instanceof HTMLLIElement && li.textContent) {
             currentSection.content.push(li.textContent.trim());
           }
         });
-      } else if (currentSection && node.nodeName === 'P') {
-        // Add paragraph as a description
-        currentSection.description = node.textContent?.trim();
+      } else if (currentSection && node instanceof HTMLParagraphElement) {
+        currentSection.description = node.textContent?.trim() || '';
       }
     });
     
@@ -203,7 +198,6 @@ export function PersonalizedContent() {
           </div>
         )}
 
-        {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-primary/5 via-accent/5 to-transparent rounded-full transform translate-x-1/2 -translate-y-1/2 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-accent/5 via-primary/5 to-transparent rounded-full transform -translate-x-1/2 translate-y-1/2 pointer-events-none" />
       </div>
