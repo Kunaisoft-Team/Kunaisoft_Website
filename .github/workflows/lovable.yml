@@ -17,7 +17,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: develop
-          head: lovable
+          branch: lovable
           commit-message: "Lovable to Develop."
           title: "Auto-generated pull request"
           body: "This pull request was generated automatically."
