@@ -27,7 +27,7 @@ export function PersonalizedContent() {
         });
 
         if (error) throw error;
-        return data.suggestions;
+        return data?.suggestions || defaultRecommendations; // Fallback to default recommendations
       } catch (error) {
         console.error('Error fetching recommendations:', error);
         toast({
@@ -35,10 +35,31 @@ export function PersonalizedContent() {
           description: "Failed to load recommendations",
           variant: "destructive",
         });
-        return null;
+        return defaultRecommendations; // Use default recommendations on error
       }
     },
   });
+
+  // Default recommendations for visitors
+  const defaultRecommendations = `
+    <h3>AI-Powered Development</h3>
+    Transform your development process with our cutting-edge AI tools and methodologies.
+    Accelerate your project timeline by up to 40%.
+    Reduce development costs while maintaining high quality.
+    Access intelligent code suggestions and automated testing.
+
+    <h3>Smart Business Solutions</h3>
+    Leverage data-driven insights to make informed business decisions.
+    Implement predictive analytics for better resource allocation.
+    Automate routine tasks and improve operational efficiency.
+    Get real-time performance monitoring and optimization.
+
+    <h3>Digital Transformation</h3>
+    Modernize your business with our comprehensive digital solutions.
+    Seamlessly integrate AI into your existing workflows.
+    Enhance customer experience with personalized interactions.
+    Stay ahead of the competition with innovative technologies.
+  `;
 
   const renderRecommendationCards = (content: string) => {
     // Parse the HTML content into a document
