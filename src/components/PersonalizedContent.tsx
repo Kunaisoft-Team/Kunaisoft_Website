@@ -20,13 +20,11 @@ export function PersonalizedContent() {
   const { data: recommendations, isLoading } = useQuery({
     queryKey: ['recommendations', userId],
     queryFn: async () => {
-      if (!userId) return null;
-      
       try {
         const response = await fetch('/api/generate-recommendations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId }),
+          body: JSON.stringify({ userId: userId || 'anonymous' }),
         });
 
         if (!response.ok) throw new Error('Failed to fetch recommendations');
@@ -36,22 +34,19 @@ export function PersonalizedContent() {
       } catch (error) {
         toast({
           title: "Error",
-          description: "Failed to load personalized recommendations",
+          description: "Failed to load recommendations",
           variant: "destructive",
         });
         return null;
       }
     },
-    enabled: !!userId,
   });
-
-  if (!userId) return null;
 
   return (
     <Card className="w-full max-w-4xl mx-auto my-8 bg-white/50 backdrop-blur-sm border-primary/20">
       <CardHeader>
         <CardTitle className="text-2xl font-bold text-primary">
-          Personalized Recommendations
+          {userId ? "Personalized Recommendations" : "Featured Services"}
         </CardTitle>
       </CardHeader>
       <CardContent>

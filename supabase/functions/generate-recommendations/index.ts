@@ -18,24 +18,33 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { userId, userPreferences } = await req.json();
+    const { userId } = await req.json();
+    let recommendations = null;
+    let preferences = null;
 
-    // Get user's interaction history
-    const { data: recommendations } = await supabaseClient
-      .from('recommendations')
-      .select('content_type, content_id, score')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(10);
+    // Only fetch user-specific data if authenticated
+    if (userId !== 'anonymous') {
+      // Get user's interaction history
+      const { data: userRecommendations } = await supabaseClient
+        .from('recommendations')
+        .select('content_type, content_id, score')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      recommendations = userRecommendations;
 
-    // Get user's preferences
-    const { data: preferences } = await supabaseClient
-      .from('user_preferences')
-      .select('preferences')
-      .eq('user_id', userId)
-      .single();
+      // Get user's preferences
+      const { data: userPreferences } = await supabaseClient
+        .from('user_preferences')
+        .select('preferences')
+        .eq('user_id', userId)
+        .single();
+      
+      preferences = userPreferences;
+    }
 
-    // Generate personalized content using GPT-4
+    // Generate content using GPT-4
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -43,15 +52,17 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4',
         messages: [
           {
             role: 'system',
-            content: 'You are an AI assistant that provides personalized content recommendations based on user preferences and history.'
+            content: 'You are an AI assistant that provides content recommendations for a digital agency website.'
           },
           {
             role: 'user',
-            content: `Based on these user preferences: ${JSON.stringify(preferences)} and interaction history: ${JSON.stringify(recommendations)}, suggest relevant content and services from our digital agency. Focus on AI Tools, Development Services, and Virtual Assistance.`
+            content: userId === 'anonymous' 
+              ? 'Suggest general services and content for a first-time visitor to our digital agency website. Focus on AI Tools, Development Services, and Virtual Assistance.'
+              : `Based on these user preferences: ${JSON.stringify(preferences)} and interaction history: ${JSON.stringify(recommendations)}, suggest relevant content and services from our digital agency. Focus on AI Tools, Development Services, and Virtual Assistance.`
           }
         ],
       }),
@@ -60,15 +71,17 @@ serve(async (req) => {
     const aiResponse = await response.json();
     const suggestions = aiResponse.choices[0].message.content;
 
-    // Store the recommendations
-    await supabaseClient.from('recommendations').insert([
-      {
-        user_id: userId,
-        content_type: 'ai_suggestion',
-        score: 1.0,
-        content_id: null // This is a general recommendation
-      }
-    ]);
+    // Only store recommendations for authenticated users
+    if (userId !== 'anonymous') {
+      await supabaseClient.from('recommendations').insert([
+        {
+          user_id: userId,
+          content_type: 'ai_suggestion',
+          score: 1.0,
+          content_id: null
+        }
+      ]);
+    }
 
     return new Response(JSON.stringify({ suggestions }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
