@@ -8,7 +8,6 @@ on:
 jobs:
   create-pull-request:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -17,8 +16,8 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          base-branch: develop
-          branch: lovable
+          base: develop
+          head: lovable
           commit-message: "Lovable to Develop."
           title: "Auto-generated pull request"
           body: "This pull request was generated automatically."
