@@ -40,27 +40,40 @@ export function PersonalizedContent() {
   });
 
   return (
-    <Card className="w-full max-w-4xl mx-auto my-8 bg-white/50 backdrop-blur-sm border-primary/20">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold text-primary">
-          {userId ? "Personalized Recommendations" : "Featured Services"}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-5/6" />
-          </div>
-        ) : (
-          <div className="prose prose-primary">
-            {recommendations && (
-              <div dangerouslySetInnerHTML={{ __html: recommendations }} />
+    <section className="py-12 bg-gradient-to-b from-white to-gray-50">
+      <div className="container mx-auto px-4">
+        <Card className="w-full max-w-4xl mx-auto bg-white/80 backdrop-blur-sm border border-primary/10 shadow-lg hover:shadow-xl transition-shadow duration-300 animate-fade-up">
+          <CardHeader className="space-y-2 text-center">
+            <CardTitle className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+              {userId ? "Personalized Recommendations" : "Featured Services"}
+            </CardTitle>
+            <p className="text-muted-foreground text-lg">
+              {userId 
+                ? "Tailored suggestions based on your interests and preferences"
+                : "Discover our most popular digital solutions"
+              }
+            </p>
+          </CardHeader>
+          <CardContent className="p-6">
+            {isLoading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-5/6" />
+              </div>
+            ) : (
+              <div className="prose prose-primary max-w-none">
+                {recommendations && (
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: recommendations }}
+                    className="text-gray-700 leading-relaxed space-y-4"
+                  />
+                )}
+              </div>
             )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          </CardContent>
+        </Card>
+      </div>
+    </section>
   );
 }
