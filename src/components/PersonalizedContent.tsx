@@ -26,39 +26,59 @@ export function PersonalizedContent() {
           body: { userId: userId || 'anonymous' },
         });
 
-        if (error) throw error;
-        return data?.suggestions || defaultRecommendations; // Fallback to default recommendations
+        if (error) {
+          console.error('Supabase function error:', error);
+          throw error;
+        }
+
+        // If we have data and it's properly formatted, use it
+        if (data?.suggestions && typeof data.suggestions === 'string') {
+          return data.suggestions;
+        }
+
+        console.log('Falling back to default recommendations');
+        return defaultRecommendations;
       } catch (error) {
         console.error('Error fetching recommendations:', error);
         toast({
           title: "Error",
-          description: "Failed to load recommendations",
+          description: "Failed to load recommendations, showing default content",
           variant: "destructive",
         });
-        return defaultRecommendations; // Use default recommendations on error
+        return defaultRecommendations;
       }
     },
+    retry: 1,
   });
 
-  // Default recommendations for visitors
+  // Default recommendations with structured content
   const defaultRecommendations = `
     <h3>AI-Powered Development</h3>
-    Transform your development process with our cutting-edge AI tools and methodologies.
-    Accelerate your project timeline by up to 40%.
-    Reduce development costs while maintaining high quality.
-    Access intelligent code suggestions and automated testing.
+    <p>Transform your development process with our cutting-edge AI tools and methodologies.</p>
+    <ul>
+      <li>Accelerate your project timeline by up to 40%</li>
+      <li>Reduce development costs while maintaining high quality</li>
+      <li>Access intelligent code suggestions and automated testing</li>
+      <li>Implement continuous integration and deployment</li>
+    </ul>
 
     <h3>Smart Business Solutions</h3>
-    Leverage data-driven insights to make informed business decisions.
-    Implement predictive analytics for better resource allocation.
-    Automate routine tasks and improve operational efficiency.
-    Get real-time performance monitoring and optimization.
+    <p>Leverage data-driven insights to make informed business decisions.</p>
+    <ul>
+      <li>Implement predictive analytics for better resource allocation</li>
+      <li>Automate routine tasks and improve operational efficiency</li>
+      <li>Get real-time performance monitoring and optimization</li>
+      <li>Enhance decision-making with AI-powered insights</li>
+    </ul>
 
     <h3>Digital Transformation</h3>
-    Modernize your business with our comprehensive digital solutions.
-    Seamlessly integrate AI into your existing workflows.
-    Enhance customer experience with personalized interactions.
-    Stay ahead of the competition with innovative technologies.
+    <p>Modernize your business with our comprehensive digital solutions.</p>
+    <ul>
+      <li>Seamlessly integrate AI into your existing workflows</li>
+      <li>Enhance customer experience with personalized interactions</li>
+      <li>Stay ahead of the competition with innovative technologies</li>
+      <li>Scale your digital infrastructure efficiently</li>
+    </ul>
   `;
 
   const renderRecommendationCards = (content: string) => {
@@ -80,8 +100,16 @@ export function PersonalizedContent() {
           content: [],
           icon: getRandomIcon()
         };
-      } else if (currentSection && node.textContent?.trim()) {
-        currentSection.content.push(node.textContent.trim());
+      } else if (currentSection && node.nodeName === 'UL') {
+        // Extract list items
+        Array.from(node.children).forEach(li => {
+          if (li.textContent?.trim()) {
+            currentSection.content.push(li.textContent.trim());
+          }
+        });
+      } else if (currentSection && node.nodeName === 'P') {
+        // Add paragraph as a description
+        currentSection.description = node.textContent?.trim();
       }
     });
     
@@ -104,6 +132,9 @@ export function PersonalizedContent() {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-2">
+          {section.description && (
+            <p className="text-gray-600 mb-4">{section.description}</p>
+          )}
           <ul className="space-y-2 text-gray-600">
             {section.content.map((item, i) => (
               <li key={i} className="flex items-start gap-2">
