@@ -19,7 +19,7 @@ export const Contact = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('https://kunaisoft.app.n8n.cloud/webhook/8dffc252-4683-4173-b8ed-b5b4985452ec', {
+      const response = await fetch('https://primary-production-bfff.up.railway.app/webhook/a8fe6593-9566-4795-9534-8a2a3728b914', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
