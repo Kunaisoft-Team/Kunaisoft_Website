@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
@@ -20,78 +19,91 @@ serve(async (req) => {
     );
 
     const { userId } = await req.json();
+    console.log('Generating recommendations for user:', userId);
+
     let recommendations = null;
     let preferences = null;
 
     // Only fetch user-specific data if authenticated
     if (userId !== 'anonymous') {
       // Get user's interaction history
-      const { data: userRecommendations } = await supabaseClient
+      const { data: userRecommendations, error: recError } = await supabaseClient
         .from('recommendations')
         .select('content_type, content_id, score')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(10);
       
-      recommendations = userRecommendations;
+      if (recError) {
+        console.error('Error fetching recommendations:', recError);
+      } else {
+        recommendations = userRecommendations;
+      }
 
       // Get user's preferences
-      const { data: userPreferences } = await supabaseClient
+      const { data: userPreferences, error: prefError } = await supabaseClient
         .from('user_preferences')
         .select('preferences')
         .eq('user_id', userId)
         .single();
       
-      preferences = userPreferences;
+      if (prefError) {
+        console.error('Error fetching preferences:', prefError);
+      } else {
+        preferences = userPreferences;
+      }
+
+      console.log('User data fetched:', { recommendations, preferences });
     }
 
-    // Generate content using GPT-4
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an AI assistant that provides content recommendations for a digital agency website.'
-          },
-          {
-            role: 'user',
-            content: userId === 'anonymous' 
-              ? 'Suggest general services and content for a first-time visitor to our digital agency website. Focus on AI Tools, Development Services, and Virtual Assistance.'
-              : `Based on these user preferences: ${JSON.stringify(preferences)} and interaction history: ${JSON.stringify(recommendations)}, suggest relevant content and services from our digital agency. Focus on AI Tools, Development Services, and Virtual Assistance.`
-          }
-        ],
-      }),
-    });
+    // Generate personalized content based on user data
+    const content = generatePersonalizedContent(recommendations, preferences);
 
-    const aiResponse = await response.json();
-    const suggestions = aiResponse.choices[0].message.content;
-
-    // Only store recommendations for authenticated users
-    if (userId !== 'anonymous') {
-      await supabaseClient.from('recommendations').insert([
-        {
-          user_id: userId,
-          content_type: 'ai_suggestion',
-          score: 1.0,
-          content_id: null
-        }
-      ]);
-    }
-
-    return new Response(JSON.stringify({ suggestions }), {
+    return new Response(JSON.stringify({ suggestions: content }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error in generate-recommendations:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
+
+function generatePersonalizedContent(recommendations: any[] | null, preferences: any | null) {
+  // This is a simplified version. In a real application, you would use this data
+  // to generate truly personalized content, possibly using AI or complex business logic
+  const topics = recommendations?.map(r => r.content_type) || [];
+  const userPrefs = preferences?.preferences || {};
+
+  // For now, return a basic template with some conditional content
+  return `
+    <h3>Customized Development Solutions</h3>
+    <p>Tailored development services based on your unique requirements.</p>
+    <ul>
+      <li>Specialized ${topics.includes('frontend') ? 'frontend' : 'full-stack'} development expertise</li>
+      <li>Custom solutions designed for your specific industry</li>
+      <li>Scalable architecture planning and implementation</li>
+      <li>Continuous support and maintenance</li>
+    </ul>
+
+    <h3>Strategic Technology Consulting</h3>
+    <p>Expert guidance for your digital transformation journey.</p>
+    <ul>
+      <li>Technology stack optimization and modernization</li>
+      <li>Performance optimization and scaling strategies</li>
+      <li>Security best practices and implementation</li>
+      <li>Cloud infrastructure planning and deployment</li>
+    </ul>
+
+    <h3>Innovation & Growth</h3>
+    <p>Cutting-edge solutions for business growth.</p>
+    <ul>
+      <li>AI and machine learning integration</li>
+      <li>Data-driven decision making tools</li>
+      <li>Automated workflow optimization</li>
+      <li>Scalable cloud solutions</li>
+    </ul>
+  `;
+}
