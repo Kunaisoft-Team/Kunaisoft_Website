@@ -21,17 +21,14 @@ export function PersonalizedContent() {
     queryKey: ['recommendations', userId],
     queryFn: async () => {
       try {
-        const response = await fetch('/api/generate-recommendations', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: userId || 'anonymous' }),
+        const { data, error } = await supabase.functions.invoke('generate-recommendations', {
+          body: { userId: userId || 'anonymous' },
         });
 
-        if (!response.ok) throw new Error('Failed to fetch recommendations');
-        
-        const data = await response.json();
+        if (error) throw error;
         return data.suggestions;
       } catch (error) {
+        console.error('Error fetching recommendations:', error);
         toast({
           title: "Error",
           description: "Failed to load recommendations",
