@@ -15,9 +15,9 @@ export const trackPageView = async (pagePath: string) => {
       .from('seo_metrics')
       .select('*')
       .eq('page_path', pagePath)
-      .single();
+      .maybeSingle();
 
-    if (fetchError && fetchError.code !== 'PGRST116') {
+    if (fetchError) {
       console.error('Error fetching metrics:', fetchError);
       return;
     }
