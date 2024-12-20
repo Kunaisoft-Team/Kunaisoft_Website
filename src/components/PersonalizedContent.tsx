@@ -80,7 +80,7 @@ export function PersonalizedContent() {
     },
     retry: 1,
     staleTime: 300000, // Cache for 5 minutes
-    cacheTime: 600000, // Keep in cache for 10 minutes
+    gcTime: 600000, // Keep in cache for 10 minutes (previously cacheTime)
   });
 
   const sections = recommendations ? parseRecommendations(recommendations) : [];
