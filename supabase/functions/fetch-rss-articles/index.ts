@@ -1,3 +1,4 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { parseFeed } from "https://deno.land/x/rss/mod.ts";
 import { enhanceContent } from './utils/contentEnhancer.ts';
@@ -19,8 +20,6 @@ const rssSources = [
   'https://feeds.dzone.com/monitoring-and-observability',
   'https://feeds.dzone.com/performance'
 ];
-
-const ARTICLES_PER_SOURCE = 2;
 
 function generateSlug(title: string): string {
   return title
@@ -63,8 +62,7 @@ async function fetchAndProcessFeed(url: string, supabaseClient: any, kunaisoftPr
 
     let processedCount = 0;
     if (feed.entries) {
-      // Only process the first ARTICLES_PER_SOURCE articles
-      const limitedEntries = feed.entries.slice(0, ARTICLES_PER_SOURCE);
+      const limitedEntries = feed.entries.slice(0, 2);
       
       for (const entry of limitedEntries) {
         const title = entry.title?.value || entry.title;
@@ -87,9 +85,10 @@ async function fetchAndProcessFeed(url: string, supabaseClient: any, kunaisoftPr
             .single();
 
           if (!existingPost) {
-            console.log('Creating new post:', title);
+            console.log('Processing new post:', title);
             
-            const { content, excerpt, readingTime } = enhanceContent(originalContent, title, topic);
+            // Enhance content with AI and get a unique image
+            const { content, excerpt, readingTime } = await enhanceContent(originalContent, title, topic);
             const imageUrl = getRandomTopicImage(topic);
             
             const { error: postError } = await supabaseClient

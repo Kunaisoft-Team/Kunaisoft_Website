@@ -6,196 +6,70 @@ interface EnhancedContent {
   readingTime: number;
 }
 
-export function enhanceContent(originalContent: string, title: string, topic: string): EnhancedContent {
-  const contentImages = getTopicImages(topic);
+async function rewriteWithAI(content: string, title: string, topic: string): Promise<string> {
+  const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
   
-  // Generate SEO-friendly content with proper structure
-  const enhancedContent = `
-    <article class="prose lg:prose-xl">
-      <h1 class="text-4xl font-bold mb-8">${title}</h1>
-      
-      <div class="lead text-xl mb-8">
-        ${generateIntroduction(originalContent)}
-      </div>
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a professional content writer who specializes in making technical content more engaging and readable while maintaining accuracy. 
+            Keep all HTML formatting intact but rewrite the content to be more friendly and engaging. 
+            Maintain the same structure with h1, h2, h3 tags and other HTML elements.
+            Focus on the topic: ${topic}`
+          },
+          {
+            role: 'user',
+            content: `Please rewrite this content to be more engaging and reader-friendly while keeping the HTML structure intact. Title: ${title}\n\nContent: ${content}`
+          }
+        ],
+        temperature: 0.7
+      }),
+    });
 
-      <h2 class="text-2xl font-semibold mt-12 mb-6">Key Insights</h2>
-      <ul class="list-disc pl-6 space-y-4 mb-8">
-        ${generateKeyPoints(originalContent).map(point => `<li>${point}</li>`).join('\n')}
-      </ul>
+    const data = await response.json();
+    return data.choices[0].message.content;
+  } catch (error) {
+    console.error('Error rewriting content with AI:', error);
+    return content; // Fallback to original content if AI rewriting fails
+  }
+}
 
-      <figure class="my-8">
-        <img src="${contentImages[0]}" alt="Visual representation of the concept" class="rounded-lg shadow-lg"/>
-        <figcaption class="text-center text-gray-600 mt-2">Understanding the core concepts</figcaption>
-      </figure>
-
-      <h2 class="text-2xl font-semibold mt-12 mb-6">Detailed Analysis</h2>
-      <div class="space-y-4">
-        ${generateDetailedContent(originalContent)}
-      </div>
-
-      <figure class="my-8">
-        <img src="${contentImages[1]}" alt="Practical implementation example" class="rounded-lg shadow-lg"/>
-        <figcaption class="text-center text-gray-600 mt-2">Real-world application</figcaption>
-      </figure>
-
-      <div class="bg-gray-50 p-6 rounded-lg my-8">
-        <h3 class="text-xl font-semibold mb-4">Expert Insights</h3>
-        <blockquote class="text-lg italic border-l-4 border-primary pl-4">
-          "${generateExpertQuote(topic)}"
-        </blockquote>
-      </div>
-
-      <h2 class="text-2xl font-semibold mt-12 mb-6">Practical Applications</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-8">
-        ${generatePracticalApplications(topic).map(app => `
-          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-            <h4 class="font-semibold mb-2">${app.title}</h4>
-            <p class="text-gray-600">${app.description}</p>
-          </div>
-        `).join('\n')}
-      </div>
-
-      <figure class="my-8">
-        <img src="${contentImages[2]}" alt="Future implications and possibilities" class="rounded-lg shadow-lg"/>
-        <figcaption class="text-center text-gray-600 mt-2">Looking ahead: Future possibilities</figcaption>
-      </figure>
-
-      <h2 class="text-2xl font-semibold mt-12 mb-6">Key Takeaways</h2>
-      <ul class="list-disc pl-6 space-y-2 mb-8">
-        ${generateKeyTakeaways(originalContent, topic).map(takeaway => `<li>${takeaway}</li>`).join('\n')}
-      </ul>
-
-      <div class="bg-gray-50 p-6 rounded-lg my-8">
-        <h3 class="text-xl font-semibold mb-4">Impact Statistics</h3>
-        <div class="grid grid-cols-2 gap-4">
-          ${generateStatistics(topic).map(stat => `
-            <div class="text-center">
-              <div class="text-2xl font-bold text-primary">${stat.value}</div>
-              <div class="text-sm text-gray-600">${stat.label}</div>
-            </div>
-          `).join('\n')}
-        </div>
-      </div>
-    </article>
-  `;
+export async function enhanceContent(originalContent: string, title: string, topic: string): Promise<EnhancedContent> {
+  console.log('Enhancing content for:', title);
+  
+  // Rewrite content with AI
+  const enhancedContent = await rewriteWithAI(originalContent, title, topic);
+  
+  // Generate excerpt
+  const excerpt = generateExcerpt(enhancedContent);
+  
+  // Calculate reading time
+  const readingTime = calculateReadingTime(enhancedContent);
 
   return {
     content: enhancedContent,
-    excerpt: generateExcerpt(originalContent),
-    readingTime: calculateReadingTime(enhancedContent)
+    excerpt,
+    readingTime
   };
-}
-
-function generateIntroduction(content: string): string {
-  // Return full introduction without truncation
-  return content;
-}
-
-function generateKeyPoints(content: string): string[] {
-  const paragraphs = content.split('\n').filter(p => p.trim().length > 0);
-  const points = paragraphs.slice(0, 4).map(p => p.trim());
-  
-  if (points.length < 4) {
-    return [
-      "Understanding the fundamentals of the topic in depth",
-      "Key considerations for practical implementation",
-      "Best practices and optimization strategies",
-      "Future trends and potential developments"
-    ];
-  }
-  
-  return points;
-}
-
-function generateDetailedContent(content: string): string {
-  return content.split('\n')
-    .filter(paragraph => paragraph.trim().length > 0)
-    .map(paragraph => `<p class="text-gray-700 leading-relaxed">${paragraph}</p>`)
-    .join('\n');
-}
-
-function generateExpertQuote(topic: string): string {
-  const quotes = {
-    ai_tools: "AI tools are revolutionizing how we approach problem-solving and decision-making in modern business contexts.",
-    ai_prompts: "The art of crafting effective AI prompts is becoming as crucial as traditional programming skills.",
-    productivity: "True productivity isn't about doing more things, but doing the right things more effectively.",
-    getting_things_done: "The key to getting things done is not about managing time, but managing our attention and energy."
-  };
-  return quotes[topic as keyof typeof quotes] || quotes.productivity;
-}
-
-function generatePracticalApplications(topic: string): Array<{ title: string; description: string }> {
-  const applications = {
-    ai_tools: [
-      { title: "Process Automation", description: "Streamlining workflows through intelligent automation" },
-      { title: "Decision Support", description: "Enhanced decision-making through data-driven insights" }
-    ],
-    ai_prompts: [
-      { title: "Content Generation", description: "Creating engaging and relevant content efficiently" },
-      { title: "Problem Solving", description: "Structuring complex problems for AI processing" }
-    ],
-    productivity: [
-      { title: "Time Management", description: "Optimizing daily schedules for maximum efficiency" },
-      { title: "Task Prioritization", description: "Focusing on high-impact activities" }
-    ],
-    getting_things_done: [
-      { title: "Project Planning", description: "Breaking down complex projects into manageable tasks" },
-      { title: "Execution Strategy", description: "Implementing effective action plans" }
-    ]
-  };
-  return applications[topic as keyof typeof applications] || applications.productivity;
-}
-
-function generateKeyTakeaways(content: string, topic: string): string[] {
-  const paragraphs = content.split('\n').filter(p => p.trim().length > 0);
-  const takeaways = paragraphs
-    .slice(-4)
-    .map(p => p.trim())
-    .filter(p => p.length > 20 && p.length < 200);
-
-  if (takeaways.length < 4) {
-    return [
-      "Understanding core concepts is crucial for successful implementation",
-      "Regular monitoring and optimization lead to better results",
-      "Integration with existing workflows enhances adoption",
-      "Continuous learning and adaptation are key to long-term success"
-    ];
-  }
-
-  return takeaways;
-}
-
-function generateStatistics(topic: string): Array<{ value: string; label: string }> {
-  const stats = {
-    ai_tools: [
-      { value: "40%", label: "Efficiency Gain" },
-      { value: "2.5x", label: "ROI Improvement" }
-    ],
-    ai_prompts: [
-      { value: "60%", label: "Time Saved" },
-      { value: "85%", label: "Accuracy Rate" }
-    ],
-    productivity: [
-      { value: "30%", label: "Task Completion" },
-      { value: "45%", label: "Time Optimization" }
-    ],
-    getting_things_done: [
-      { value: "50%", label: "Project Success" },
-      { value: "3x", label: "Delivery Speed" }
-    ]
-  };
-  return stats[topic as keyof typeof stats] || stats.productivity;
 }
 
 function generateExcerpt(content: string): string {
-  // Generate a meaningful excerpt from the first few paragraphs
-  const paragraphs = content.split('\n').filter(p => p.trim().length > 0);
-  const firstParagraph = paragraphs[0] || '';
+  const plainText = content.replace(/<[^>]*>/g, '');
+  const firstParagraph = plainText.split('\n')[0] || '';
   return firstParagraph.length > 300 ? `${firstParagraph.substring(0, 297)}...` : firstParagraph;
 }
 
 function calculateReadingTime(content: string): number {
   const plainText = content.replace(/<[^>]*>/g, '');
   const words = plainText.split(/\s+/).length;
-  return Math.max(5, Math.ceil(words / 200)); // Minimum 5 minutes reading time
+  return Math.max(5, Math.ceil(words / 200));
 }
