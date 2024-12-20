@@ -26,7 +26,7 @@ const services = [
 
 export const Services = () => {
   return (
-    <section id="services" className="py-20 bg-[#253557]/5">
+    <section id="services" className="py-20 bg-gradient-to-b from-[#253557]/5 to-transparent">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4 text-[#253557]">Our Services</h2>
@@ -38,10 +38,10 @@ export const Services = () => {
           {services.map((service, index) => (
             <Card 
               key={index}
-              className="p-6 text-center hover:shadow-lg transition-shadow duration-300 animate-fade-up bg-white border-[#253557]/10 hover:border-[#0BD255] hover:shadow-[#0BD255]/20"
+              className="group p-6 text-center hover:shadow-xl transition-all duration-300 animate-fade-up bg-white border-[#253557]/10 hover:border-[#0BD255] hover:shadow-[#0BD255]/20"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <div className="flex justify-center">{service.icon}</div>
+              <div className="flex justify-center group-hover:scale-110 transition-transform duration-300">{service.icon}</div>
               <h3 className="text-xl font-semibold mb-3 text-[#253557] group-hover:text-[#0BD255] transition-colors">{service.title}</h3>
               <p className="text-[#253557]/70">{service.description}</p>
             </Card>
