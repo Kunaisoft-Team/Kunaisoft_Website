@@ -86,8 +86,8 @@ export function PersonalizedContent() {
   const sections = recommendations ? parseRecommendations(recommendations) : [];
 
   return (
-    <section className="py-16 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-white via-purple-50/30 to-white pointer-events-none" />
+    <section className="py-16 relative overflow-hidden bg-gradient-to-b from-[#253557]/5 via-transparent to-[#253557]/5">
+      <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-5" />
       
       <div className="container mx-auto px-4 relative">
         <RecommendationHeader isAuthenticated={!!userId} />
@@ -109,8 +109,8 @@ export function PersonalizedContent() {
           </div>
         )}
 
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-primary/5 via-accent/5 to-transparent rounded-full transform translate-x-1/2 -translate-y-1/2 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-accent/5 via-primary/5 to-transparent rounded-full transform -translate-x-1/2 translate-y-1/2 pointer-events-none" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#253557]/10 via-[#0BD255]/5 to-transparent rounded-full transform translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-[#0BD255]/5 via-[#253557]/10 to-transparent rounded-full transform -translate-x-1/2 translate-y-1/2 pointer-events-none" />
       </div>
     </section>
   );
