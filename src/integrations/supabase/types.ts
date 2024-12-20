@@ -116,6 +116,41 @@ export type Database = {
         }
         Relationships: []
       }
+      recommendations: {
+        Row: {
+          content_id: string | null
+          content_type: string
+          created_at: string | null
+          id: string
+          score: number
+          user_id: string | null
+        }
+        Insert: {
+          content_id?: string | null
+          content_type: string
+          created_at?: string | null
+          id?: string
+          score: number
+          user_id?: string | null
+        }
+        Update: {
+          content_id?: string | null
+          content_type?: string
+          created_at?: string | null
+          id?: string
+          score?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recommendations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tags: {
         Row: {
           created_at: string
@@ -133,6 +168,35 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          id: string
+          last_updated: string | null
+          preferences: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          last_updated?: string | null
+          preferences?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          last_updated?: string | null
+          preferences?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
