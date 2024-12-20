@@ -6,9 +6,20 @@ export const SEOOptimizer = () => {
   const location = useLocation();
 
   useEffect(() => {
-    const cleanup = trackPageView(location.pathname);
+    let cleanup: (() => void) | undefined;
+
+    // Initialize tracking and store cleanup function
+    const initializeTracking = async () => {
+      cleanup = await trackPageView(location.pathname);
+    };
+
+    initializeTracking();
+
+    // Return cleanup function
     return () => {
-      if (cleanup) cleanup();
+      if (cleanup) {
+        cleanup();
+      }
     };
   }, [location.pathname]);
 
