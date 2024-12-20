@@ -151,6 +151,36 @@ export type Database = {
           },
         ]
       }
+      seo_metrics: {
+        Row: {
+          avg_time_on_page: number | null
+          bounce_rate: number | null
+          created_at: string | null
+          id: string
+          page_path: string
+          updated_at: string | null
+          visits: number | null
+        }
+        Insert: {
+          avg_time_on_page?: number | null
+          bounce_rate?: number | null
+          created_at?: string | null
+          id?: string
+          page_path: string
+          updated_at?: string | null
+          visits?: number | null
+        }
+        Update: {
+          avg_time_on_page?: number | null
+          bounce_rate?: number | null
+          created_at?: string | null
+          id?: string
+          page_path?: string
+          updated_at?: string | null
+          visits?: number | null
+        }
+        Relationships: []
+      }
       tags: {
         Row: {
           created_at: string
